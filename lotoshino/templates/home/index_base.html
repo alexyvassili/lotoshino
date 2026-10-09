@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<section class="main-content">
+  <div class="container-fluid">
+    <div class="row">
+    <div class="col-md-2 navbar-col">
+        <section class="aside-content">
+        {% include 'home/includes/aside_content.html' %}
+        <div class="row">
+        </div>
+        </section>
+    </div>
+    <div class="col-md-5 main-content-col">
+        {% block maincontent %}{% endblock %}
+    </div>
+    <div class="col-sm-12 small-screen-aside-content">
+        {% include 'home/includes/aside_content.html' %}
+    </div>
+    <div class="col-md-3 resources-col" style="padding-left: 50px;">
+        {% block rightsidecol %} {% endblock %}
+    </div>
+    <div class="col-md-2"></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

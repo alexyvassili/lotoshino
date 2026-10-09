@@ -1,0 +1,59 @@
+{% extends 'home/index_base.html' %}
+{% load static %}
+{% block body_class %}template-homepage{% endblock %}
+
+{% block maincontent %}
+  <h2 class="mainpage-mainblock-header">Лотошинский церковный округ</h2>
+  <section class="mainpage-text-content">
+    <h2 class="mainpage-mainblock-header mainpage-maincontent-header">Интерактивная карта благочиния</h2>
+    <div style="width: 500px; height: 438px; position: relative; background: url({% static 'images/map.png' %}) 0 0 no-repeat;">
+      <a id="point-1" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 23px; left: 102px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/60" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-2" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 6px; left: 125px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/61" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-3" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 32px; left: 147px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/54" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-4" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 127px; left: 237px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/52" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-5" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 202px; left: 198px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/56" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-6" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 251px; left: 154px;" title="Открыть страницу Храма" href="/preobrazhenskii-khram-v-lotoshino"></a>
+      <a id="point-7" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 267px; left: 134px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/53" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-8" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 143px; left: 403px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/57" target="_blank" rel="noopener noreferrer"></a>
+      <a id="point-9" class="point" style="width: 24px; height: 65px; display: block; position: absolute; z-index: 10; top: 241px; left: 381px;" title="Открыть страницу Храма" href="http://www.lotoshino-blag.ru/node/59" target="_blank" rel="noopener noreferrer"></a>
+    </div>
+    <p><a href="/khramy-blagochiniya">Список всех Храмов Лотошинского благочиния</a></p>
+    <p>Название села <strong>Лотошино</strong>, как свидетельствует принятое уставом района изображение его герба, произошло от «лоточной торговли», что, в свою очередь, указывает на торговое значение Лотошина. Первое упоминание села в летописях приходится на 1478 г., когда оно было <strong>центром Лотошинского княжества</strong>. Однако уже в 1485 г. оно вошло в Московское княжество. В те годы это было торговое село с 32 лавками и 21 торговым местом. <strong><a href="/istoricheskaya-spravka-o-lotoshinskom-raione">Продолжение</a></strong></p><p>&nbsp;</p>
+    <p>Наши партнеры:
+      <a href="http://lotoshino.gallery.ru/" target="_blank" rel="noopener noreferrer">Официальная фотогалерея Лотошинского района</a><br />
+      <a href="http://radio-lotoshino.ru/?page_id=43" target="_blank" rel="noopener noreferrer">Лотошинская редакция РТВ – Подмосковье </a><br />
+      Проезд в Лотошино из Москвы <a href="/kontakty">можно посмотреть в разделе "Контакты"</a><br />
+      <a href="/kontakty">Расписание автобусов "Лотошино-Москва" и "Москва-Лотошино"</a><br />
+      Информационный партнер сайта: <a href="http://ia-lot.mosoblonline.ru/" target="_blank" rel="noopener noreferrer">Лотошинская газета «Сельская Новь»</a><br />
+      Рекламное агентство «Новое Слово»: <a href="http://www.novslovo.ru/razrabotka-prezentaciy.html" target="_blank" rel="noopener noreferrer">Разработка презентаций</a>
+    </p>
+    <p>&nbsp;</p>
+  </section>
+{% endblock %}
+
+{% block rightsidecol %}
+  <div class="row rightside-col-row">
+    <h2 class="mainpage-block-header">Социальные сети</h2>
+    <p></p>
+    <p><a href="https://vk.com/lotoshniki" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/logo/vkontakte_logo_circle_transparent.png' %}" alt="" width="35" /></a>&nbsp;<a href="https://vk.com/lotoshniki" target="_blank" rel="noopener noreferrer">Сообщество ВКонтакте</a></p>
+  </div>
+
+  <div class="row rightside-col-row">
+    <h2 class="mainpage-block-header">Информационные ресурсы епархии</h2>
+    <p></p>
+    <p><a href="https://odinceparh.ru/" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/logo/website_web_12218.png' %}" alt="Сайт епархии" width="30" /></a>&nbsp;&nbsp;<a href="https://odinceparh.ru/" target="_blank" rel="noopener noreferrer">Сайт епархии</a></p>
+    <p><a href="https://vk.com/odinceparh" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/logo/vkontakte_logo_circle_transparent.png' %}" alt="ВКонтакте" width="35" /></a>&nbsp;<a href="https://vk.com/odinceparh" target="_blank" rel="noopener noreferrer">ВКонтакте</a></p>
+
+
+  </div>
+
+  <div class="row rightside-col-row">
+    <p><a href="https://palomnikodintsovo.ru" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/palomnikodintsovo-banner.jpeg' %}" alt="" width="200" /></a></p>
+  </div>
+
+  <div class="row rightside-col-row">
+    <h2 class="mainpage-block-header banner-header">Восстановим порушенные святыни Подмосковья!</h2>
+    <a href="http://sohranihram.ru/pomoch-fondu/" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/832ac066a46fdf04fa406a1bc33cf130.jpg' %}" class="banner-item d-block" alt="" width="200" height="140" /></a>
+    <a href="http://protivnarko.ru" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/listovka-tsvetnaya-360x245.jpg' %}" class="banner-item" alt="" width="200" /></a>
+  </div>
+{% endblock %}

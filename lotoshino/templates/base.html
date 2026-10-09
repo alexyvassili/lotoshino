@@ -1,0 +1,62 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8" />
+        <title>{% block title %}Лотошинский церковный округ{% endblock %}</title>
+        <meta name="description" content="Официальный сайт Лотошинского церковного округа Одинцовской епархии Русской Православной Церкви">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="{% static 'favicon.ico' %}" type="image/vnd.microsoft.icon">
+
+        {# Global stylesheets #}
+        <link rel="stylesheet" href="{% static 'vendor/bootstrap/5.3.8/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/lotoshino.css' %}?v=1">
+
+        {% block extra_css %}
+        {# Override this in templates to add extra stylesheets #}
+        {% endblock %}
+    </head>
+
+    <body class="{% block body_class %}{% endblock %}">
+
+<header id="main" >
+
+  <div class="container">
+    <div class="row header-row">
+      <div class="col-12 p-3 mb-2 mt-5">
+          <img src="{% static 'images/logo_9.png' %}" class="rounded img-fluid" alt="Официальный сайт Лотошинского церковного округа Одинцовской епархии Русской Православной Церкви">
+      </div>
+    </div>
+</div>
+</header>
+
+        {% block content %}{% endblock %}
+
+<footer>
+  <div class="container-fluid">
+    <div class="row footer-row">
+      <div class="col-md-3">
+        <p>© Лотошинский Церковный округ Одинцовской епархии РПЦ<br> Адрес: Московская обл. пгт Лотошино, ул. Центральная д. 3</p>
+      </div>
+      <div class="col-md-5 banner-col">
+        <a href="http://www.patriarchia.ru/index.html" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/patriarchbanner_894x159.png' %}" class="banner-img" height="31" border="0" alt="Официальный сайт Русской Православной Церкви / Патриархия.ru"></a>
+        <a href="https://mosmit.ru/" title="Московская митрополия Русской Православной Церкви" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/mosmitbanner_1062x189.png' %}" class="banner-img" alt="Московская митрополия Русской Православной Церкви" height="31"></a>
+        <a href="https://odinceparh.ru/" title="Одинцовская епархия Русской Православной Церкви" target="_blank" rel="noopener noreferrer"><img src="{% static 'images/banners/odinceparhbanner_1128x201.png' %}" class="banner-img" alt="Одинцовская епархия Русской Православной Церкви" height="31"></a>
+      </div>
+      <div class="col-md-2"></div>
+      <div class="col-md-2 footer-novslovo"><a href="http://www.novslovo.ru/portfolio-internet-saytov.html" class="footer-novslovo-link" target="_blank" rel="noopener noreferrer">Разработка сайта:&nbsp;Новое Слово</a></div>
+    </div>
+  </div>
+</footer>
+
+
+        {# Global javascript #}
+        <script src="{% static 'vendor/bootstrap/5.3.8/js/bootstrap.bundle.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/lotoshino.js' %}?v=1"></script>
+
+        {% block extra_js %}
+        {# Override this in templates to add extra javascript #}
+        {% endblock %}
+    </body>
+</html>

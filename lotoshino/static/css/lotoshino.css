@@ -1,0 +1,1082 @@
+/* TODO: update */
+body {
+	background: url(../images/bg.gif) 0 0 repeat;
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	line-height: 1.4em;
+    color: #000000;
+    font-size: 14px;
+	background-color:  #faeece;
+	min-width: 500px;
+}
+
+/* TODO: update */
+@media (width >= 800px) {
+	#main {
+		min-height: 320px;
+		/* max-width: 1920px; */
+		background: url(../images/temple_width310.png) 0 10px no-repeat,
+					url(../images/ornament.png) 0 295px repeat-x,	
+					url(../images/header_left.png) left 207px no-repeat,	
+					url(../images/header_right.png) right 15px no-repeat,	
+					url(../images/header_center.png) 0 225px repeat-x,
+					url(../images/sky.jpg) 0 0 no-repeat;
+	}
+}
+
+@media (width < 800px) {
+	#main {
+		min-height: 320px;
+		/* max-width: 1920px; */
+		background: /* url(../images/temple_width310.png) 0 10px no-repeat, */
+					url(../images/ornament.png) 0 295px repeat-x,	
+					url(../images/header_left.png) left 207px no-repeat,	
+					url(../images/header_right.png) right 15px no-repeat,	
+					url(../images/header_center.png) 0 225px repeat-x,
+					url(../images/sky.jpg) 0 0 no-repeat;
+	}
+}
+
+@media (800px <= width <= 1630px ) {
+	.header-row {
+		margin-left: 100px;
+  }
+}
+
+@media (width < 858px) {
+	.aside-content {
+		display: none;
+	}
+}
+
+@media (width >=858px) {
+	.small-screen-aside-content {
+		display: none;
+	}
+}
+
+@media (width < 992px) {
+	.navbar-top {
+		display: none;
+	}
+}
+
+.navbar-top {
+	position: absolute;
+	z-index: 100;
+	width: 100%;
+	padding-top: 5px;
+}
+
+.navbar-top-link {
+	color: #000;
+	font-size: 14px;
+  	font-weight: normal;
+  	font-family: Verdana !important;
+}
+
+.navbar-top-link:hover {
+	color: #000;
+	font-size: 14px;
+  	font-weight: normal;
+  	font-family: Verdana !important;
+	text-decoration: underline;
+}
+
+.main-content-col {
+	padding-left: 50px;
+	min-width: 500px;
+	margin-left: 1%;
+}
+
+@media (width < 768px) {
+	.main-content-col {
+		margin-left: 0;
+	}
+}
+
+.navbar-col {
+	padding-left: 30px;
+}
+
+.news-col {
+	padding-left: 50px;
+}
+
+.small-screen-aside-content {
+	padding-left: 50px;
+	padding-right: 100px;
+	margin-bottom: 20px;
+}
+
+.main-navbar-nav {
+	margin-top: 25px;
+}
+
+#main-navbar-ul {
+	flex-direction: column;
+	max-width: 210px;
+}
+
+.main-nav-item {
+	margin-bottom: 5px;
+	font-weight: 500;
+	/* padding-left: 20px; */
+	text-decoration: underline;
+}
+
+.main-nav-item:hover, #main-navbar-ul li.active {
+	border: 1px solid #ece5d1;
+	border-radius: 12px;
+	background-color: #ece5d1;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.main-nav-link {
+	color: black;
+	font-size: 16px;
+	padding-top: 2px;
+  	padding-bottom: 2px;
+}
+
+.mainpage-block-header {
+	font-size: 20px;
+  	font-weight: bold;
+  	color: #cf985c;
+}
+
+.mainpage-mainblock-header {
+	font-size: 23px;
+  	font-weight: bold;
+  	margin: 10px 0px 20px 13px;
+  	color: #cf985c;
+}
+
+.mainblock-header {
+	font-size: 21px;
+  	font-weight: bold;
+  	margin: 10px 0px 15px 0px;
+  	color: #cf985c;
+}
+
+.videogallery-iframe {
+	margin-bottom: 10px;
+}
+
+.mainpage-maincontent-header {
+	margin-top: 30px;
+}
+
+.mainpage-image {
+	max-width: 86%;
+	/* text-align: center; */
+}
+
+.mainpage-text-content p {
+	text-align: justify;
+}
+
+.mainpage-news-header {
+	margin: 10px 0px 15px 13px;
+}
+
+.mainpage-news-card {
+	background: inherit;
+	border-color: #f8f1db;
+}
+
+.mainpage-news-date {
+	font-size: 13px;
+	color: gray;
+	margin-top: -3px;
+	margin-bottom: 3px;
+}
+
+.mainpage-news-card-body {
+	padding-top: 8px;
+}
+
+.mainpage-news-card-img-top {
+	padding: 10px 15px 0 15px;
+	width: 280px;
+}
+
+
+.mainpage-news-card-title {
+	color: #000;
+	font-size: 16px;
+	font-weight: bold;
+	line-height: 1.2em;
+	text-decoration: none;
+	margin-bottom: 8px;
+}
+
+.mainpage-news-card-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.mainpage-news-card-title a:hover {
+	text-decoration: underline;
+}
+
+.mainpage-news-card-text {
+	font-size: 14px;
+	margin-bottom: 8px;
+}
+
+.mainpage-news-link {
+	color: #cc0000;
+  	font-size: 14px;
+  	font-weight: bold;
+}
+
+.mainpage-all-news-link {
+	padding-left: 15px;
+	margin-bottom: 40px;
+}
+
+.rightside-col-row {
+	margin-top: 20px;
+	padding-left: 15px;
+}
+
+.banner-item {
+	margin-bottom: 10px;
+  	margin-top: 10px;
+}
+
+footer {
+	margin-top: 50px;
+	background-color: #769cae;
+	color: #fff;
+}
+
+.footer-row {
+	/* padding: 15px 0 64px; */
+	padding: 20px 15px 5px 15px;
+}
+
+.footer-novslovo {
+	padding-top: 13px;
+	text-align: right;
+  	font-size: 11px;
+}
+
+.footer-novslovo-link {
+	color: #fff;
+}
+
+.banner-col {
+	/* padding-top: 4px; */
+	padding-left: 50px;
+}
+
+.banner-col img {
+	margin-top: 4px;
+	margin-right: 12px;
+}
+
+
+
+/* Small devices (landscape phones, 576px and up) */
+/* @media (min-width: 576px) { ... } */
+
+/* Medium devices (tablets, 768px and up) */
+/* @media (min-width: 768px) { ... } */
+
+/* Large devices (desktops, 992px and up) */
+/* @media (min-width: 992px) { ... } */
+
+/* X-Large devices (large desktops, 1200px and up) */
+/* @media (min-width: 1200px) { ... } */
+
+/* XX-Large devices (larger desktops, 1400px and up) */
+/* @media (min-width: 1400px) { ... } */
+
+
+.main-content-col tr {
+	margin-bottom: 10px;
+}
+
+table {
+	border: 1px solid black;
+}
+
+tr {
+	border: 1px solid black;
+}
+
+td {
+	border: 1px solid black;
+	padding: 5px;
+  }
+
+p.news {
+	font-family: 'Times New Roman', Times, serif;
+    color: #000000;
+    font-size: 14pt;
+	text-align: justify;
+	text-indent: 20px;
+	line-height: 120%;
+	margin-bottom: 10px;
+}
+
+.news-main-img {
+	height: auto;
+	margin-bottom: 20px;
+	max-width: 100%;
+}
+
+.news-gallery-img {
+	width: 250px;
+	margin: 10px;
+}
+
+.news-gallery-col {
+	padding-top: 90px;
+	padding-left: 25px;
+}
+
+a.all-news-link {
+	color: #cc0000;
+  	font-size: 14px;
+  	font-weight: 600;
+  	margin-right: 20px;
+  	text-decoration: none;
+}
+
+p.all-news-link {
+	margin-top: 20px;
+}
+
+.news-years-block {
+	margin-top: 15px;
+	margin-bottom: 25px;
+}
+
+p.news-years {
+	line-height: 180%;
+	margin-bottom: 10px;
+}
+
+a.news-year {
+	font-size: 22px;
+	color: #cc0000;
+	margin-right: 20px;
+}
+
+.news-card {
+	width: 920px;
+	margin-bottom: 45px;
+}
+
+.news-card-title {
+	width: 80%;
+}
+
+.news-card-title a {
+	color: #000;
+	font-size: 18px;
+	font-weight: bold;
+	line-height: 1.2em;
+}
+
+.news-card-publish-date {
+	font-size: 12px;
+	margin-top: 8px;
+  	margin-bottom: 5px;
+}
+
+.news-card-title-img {
+	width: 450px;
+	margin-bottom: 12px;
+}
+
+.news-card-img {
+	width: 250px;
+	margin-bottom: 10px;
+}
+
+.news-card-text {
+	font-size: 15px;
+}
+
+.news-card-read-more {
+	margin-top: 8px;
+}
+
+.news-card-read-more a {
+	color: #cc0000;
+	font-size: 14px;
+	font-weight: bold;
+	line-height: 1.2em;
+}
+
+.source-page-content iframe {
+	max-width: 100%;
+}
+
+.source-page-content a {
+	overflow-wrap: anywhere;
+}
+
+.source-page-content [style*="width: 800px"] {
+	max-width: 100%;
+}
+
+.source-page-content table {
+	max-width: 100%;
+}
+
+.literary-link-list {
+	margin-top: 18px;
+}
+
+.page-main-content-col .literary-link-list p {
+	margin-bottom: 1em;
+	text-indent: 0;
+}
+
+.library-page-content {
+	padding-right: 32px;
+}
+
+.library-article-list {
+	display: grid;
+	gap: 18px;
+	margin-bottom: 24px;
+}
+
+.library-article-card {
+	background-color: rgba(255, 255, 255, 0.42);
+	border: 1px solid #d6cbaa;
+	border-radius: 6px;
+	overflow: hidden;
+	width: 100%;
+}
+
+.library-article-card-body {
+	background-color: rgba(33, 37, 41, 0.03);
+	padding: 16px 18px;
+}
+
+.library-card-badge {
+	background-color: #cc0000;
+	color: #fff;
+	display: inline-block;
+	font-family: Arial, Tahoma, Helvetica, sans-serif;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	margin-right: 6px;
+	padding: 2px 5px;
+	vertical-align: super;
+}
+
+.library-article-title {
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.25;
+	margin-bottom: 10px;
+}
+
+.library-article-title a {
+	color: #000;
+	text-decoration: none;
+}
+
+.library-article-title a:hover {
+	color: #8b0000;
+	text-decoration: underline;
+}
+
+.library-page-content .library-article-excerpt p {
+	font-size: 15px;
+	line-height: 1.45;
+	margin-bottom: 10px;
+	text-indent: 0;
+}
+
+.library-article-more {
+	display: inline-block;
+}
+
+.library-article-page-content img {
+	height: auto;
+	max-width: 100%;
+}
+
+@media (width < 768px) {
+	.library-page-content {
+		padding-right: 0;
+	}
+}
+
+.azbuka-page-content {
+	padding-right: 40px;
+}
+
+.azbuka-page-content table {
+	border: 0;
+	border-collapse: separate;
+	border-spacing: 0 0;
+	width: 100%;
+}
+
+.azbuka-page-content tr {
+	border: 0;
+}
+
+.azbuka-page-content td {
+	border: 0;
+	padding: 0 32px 8px 0;
+	width: 50%;
+}
+
+.azbuka-page-content td + td {
+	padding-left: 32px;
+	padding-right: 0;
+}
+
+.azbuka-page-content a {
+	overflow-wrap: anywhere;
+}
+
+@media (width < 768px) {
+	.azbuka-page-content {
+		padding-right: 0;
+	}
+
+	.azbuka-page-content table,
+	.azbuka-page-content tbody,
+	.azbuka-page-content tr,
+	.azbuka-page-content td {
+		display: block;
+		width: 100%;
+	}
+
+	.azbuka-page-content td,
+	.azbuka-page-content td + td {
+		padding-left: 0;
+		padding-right: 0;
+	}
+}
+
+.gallery-events-grid {
+	display: grid;
+	gap: 18px;
+	grid-template-columns: 1fr;
+	margin-bottom: 24px;
+}
+
+.gallery-event-card {
+	background-color: rgba(255, 255, 255, 0.42);
+	border: 1px solid #d6cbaa;
+	border-radius: 6px;
+	height: 100%;
+	overflow: hidden;
+}
+
+.gallery-event-card:hover {
+	border-color: #b7a36e;
+}
+
+.gallery-event-img-link {
+	display: block;
+}
+
+.gallery-event-img {
+	aspect-ratio: 3 / 2;
+	display: block;
+	object-fit: cover;
+	width: 100%;
+}
+
+.gallery-event-card-body {
+	align-items: center;
+	background-color: rgba(33, 37, 41, 0.03);
+	display: flex;
+	min-height: 96px;
+	padding: 12px;
+}
+
+.gallery-event-title {
+	color: rgb(33, 37, 41);
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.225;
+	margin: 0;
+	text-align: center;
+	width: 100%;
+}
+
+.gallery-event-title a {
+	color: #000;
+	text-decoration: none;
+}
+
+.gallery-event-title a:hover {
+	color: #8b0000;
+	text-decoration: underline;
+}
+
+@media (width >= 576px) {
+	.gallery-events-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (width >= 992px) {
+	.gallery-events-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+.news-pagination-item {
+	color: #000;
+	font-size: 16px;
+  	font-weight: normal;
+  	font-family: Verdana !important;
+	margin-right: 10px;
+}
+
+.news-pagination-item:hover {
+	/* color: #000;
+	font-size: 14px;
+  	font-weight: normal;
+  	font-family: Verdana !important;
+	text-decoration: underline; */
+	border: 1px solid #ece5d1;
+	border-radius: 12px;
+	background-color: #ece5d1;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.news-pagination-item-active {
+	color: #000;
+	font-size: 16px;
+  	font-weight: normal;
+  	font-family: Verdana !important;
+	margin-right: 10px;
+	border: 1px solid #ece5d1;
+	border-radius: 12px;
+	background-color: #ece5d1;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.page-main-content-col p {
+	margin-bottom: 6px;
+	text-align: justify;
+	text-indent: 15px;
+}
+
+.history-card {
+	clear: both;
+	margin-bottom: 16px;
+}
+
+.history-card::after {
+	clear: both;
+	content: "";
+	display: block;
+}
+
+.history-card-title {
+	font-size: medium;
+	font-weight: bold;
+}
+
+.history-card-img {
+	float: left;
+	margin-left: 0;
+	margin-right: 10px;
+}
+
+
+/* LightGallery CSS */
+
+.lg-toolbar-next:before {
+	content: "\e094";
+}
+
+.lg-toolbar-prev:before {
+	content: "\e095";
+}
+
+/** Below CSS is completely optional **/
+
+.gallery-item {
+	width: 200px;
+	padding: 5px;
+}
+
+.news-gallery-col-detail {
+	align-content: start;
+	display: grid;
+	gap: 10px;
+	grid-template-columns: 1fr;
+}
+
+.news-gallery-col-detail .gallery-item {
+	display: block;
+	padding: 0;
+	width: 100%;
+}
+
+.news-gallery-col-detail .news-gallery-img {
+	aspect-ratio: 3 / 2;
+	display: block;
+	margin: 0;
+	object-fit: cover;
+	width: 100%;
+}
+
+@media (width >= 576px) {
+	.news-gallery-col-detail {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (width >= 992px) {
+	.news-gallery-col-detail {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+
+.map-header {
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: bold;
+	margin-top: 40px;
+  	margin-bottom: 15px;
+}
+
+.map-container {
+	overflow: hidden;
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+	width: 600px;
+	height: 400px;
+}
+
+.map-container iframe {
+	display: block;
+}
+
+
+.temple-card {
+	background-color: transparent;
+}
+
+.temple-card-header {
+	font-weight: bold;
+	font-size: 16px;
+}
+
+.temple-img-container {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	padding-left: 5px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+.temple-card-header {
+
+}
+
+.church-page-content > .mainblock-header {
+	margin-bottom: 30px;
+}
+
+.church-overview {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+	gap: 24px;
+	align-items: start;
+	margin-bottom: 18px;
+}
+
+.church-photo {
+	margin: 0;
+}
+
+.church-photo img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border: 1px solid #c9b98f;
+	border-radius: 6px;
+}
+
+.church-photo figcaption {
+	margin-top: 8px;
+	color: #655a48;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.church-facts {
+	margin: 0;
+	line-height: 1.5;
+}
+
+.church-facts > div + div {
+	margin-top: 12px;
+}
+
+.church-facts dt {
+	font-weight: bold;
+}
+
+.church-facts dd {
+	margin: 2px 0 0;
+}
+
+.page-main-content-col .church-gallery-link,
+.page-main-content-col .church-back-link {
+	margin: 18px 0;
+	text-align: left;
+	text-indent: 0;
+}
+
+.church-history {
+	border-top: 1px solid #d6cbaa;
+	padding-top: 14px;
+}
+
+.page-main-content-col .church-history p {
+	margin-bottom: 12px;
+	line-height: 1.6;
+}
+
+@media (width < 1200px) {
+	.church-overview {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 18px;
+	}
+
+	.church-photo {
+		max-width: 550px;
+	}
+}
+
+.martyrs-page-content > .mainblock-header,
+.martyr-page-content > .mainblock-header {
+	margin-bottom: 30px;
+}
+
+.page-main-content-col .martyrs-intro {
+	margin-bottom: 28px;
+	line-height: 1.6;
+	text-indent: 0;
+}
+
+.martyrs-list {
+	display: grid;
+	gap: 24px;
+}
+
+.martyr-card {
+	display: grid;
+	grid-template-columns: 180px minmax(0, 1fr);
+	gap: 22px;
+	padding-bottom: 24px;
+	border-bottom: 1px solid #d6cbaa;
+}
+
+.martyr-card-portrait {
+	align-self: start;
+}
+
+.martyr-card-portrait img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border: 1px solid #c9b98f;
+	border-radius: 6px;
+}
+
+.martyr-card-title {
+	font-size: 19px;
+	font-weight: bold;
+	line-height: 1.3;
+	margin: 0 0 8px;
+}
+
+.martyr-card-title a {
+	color: #000;
+	text-decoration: none;
+}
+
+.martyr-card-title a:hover {
+	color: #8b0000;
+	text-decoration: underline;
+}
+
+.page-main-content-col .martyr-dates {
+	color: #655a48;
+	margin-bottom: 14px;
+	text-indent: 0;
+	text-align: left;
+}
+
+.page-main-content-col .martyr-excerpt p,
+.page-main-content-col .martyr-biography-text p {
+	line-height: 1.6;
+	margin-bottom: 12px;
+	text-indent: 0;
+	text-align: left;
+}
+
+.martyr-read-more {
+	display: inline-block;
+	margin-top: 4px;
+}
+
+.martyr-biography-heading {
+	margin-bottom: 22px;
+}
+
+.page-main-content-col .martyr-full-name {
+	font-size: 17px;
+	font-weight: bold;
+	text-indent: 0;
+	text-align: left;
+	margin-bottom: 8px;
+}
+
+.martyr-biography-photo {
+	max-width: 445px;
+	margin: 0 0 28px;
+}
+
+.martyr-biography-photo img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border: 1px solid #c9b98f;
+	border-radius: 6px;
+}
+
+.martyr-biography-photo figcaption {
+	margin-top: 8px;
+	color: #655a48;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.martyrs-source {
+	border-left: 3px solid #c9b98f;
+	margin: 28px 0;
+	padding-left: 18px;
+}
+
+.page-main-content-col .martyrs-source p,
+.page-main-content-col .martyr-back-link {
+	text-align: left;
+	text-indent: 0;
+	line-height: 1.5;
+}
+
+.page-main-content-col .martyr-back-link {
+	margin: 24px 0;
+}
+
+@media (width < 1200px) {
+	.martyr-card {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 16px;
+	}
+
+	.martyr-card-portrait {
+		max-width: 180px;
+	}
+}
+
+.clergy-page-content {
+	display: grid;
+	gap: 18px;
+	padding-right: 32px;
+}
+
+.clergy-card {
+	background-color: transparent;
+	border: 1px solid #d6cbaa;
+	border-radius: 6px;
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	overflow: hidden;
+	width: 100%;
+}
+
+.clergy-photo-block {
+	align-items: flex-start;
+	background-color: transparent;
+	display: flex;
+	justify-content: center;
+	padding: 16px 10px;
+}
+
+.clergy-photo-block img {
+	display: block;
+	height: auto;
+	max-width: 200px;
+	width: 100%;
+}
+
+.clergy-photo {
+	border: 1px solid #c9b98f;
+}
+
+.clergy-info-block {
+	padding: 16px 18px;
+}
+
+.clergy-name-block {
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	line-height: 1.25;
+	margin-bottom: 8px;
+}
+
+.clergy-service-block {
+	border-bottom: 1px solid rgba(214, 203, 170, 0.95);
+	color: #000;
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	line-height: 1.45;
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+}
+
+.clergy-bio-block {
+	line-height: 1.45;
+}
+
+.page-main-content-col .clergy-bio-block p {
+	margin-bottom: 8px;
+	text-align: justify;
+	text-indent: 0;
+}
+
+@media (width < 992px) {
+	.clergy-page-content {
+		padding-right: 0;
+	}
+
+	.clergy-card {
+		grid-template-columns: 1fr;
+	}
+
+	.clergy-photo-block {
+		justify-content: flex-start;
+		padding-left: 18px;
+	}
+}
