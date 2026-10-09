@@ -1,0 +1,27 @@
+line-length = 88
+target-version = "py314"
+extend-exclude = ["**/migrations/**"]
+
+[lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "UP",
+    "B",
+    "C4",
+    "SIM",
+    "DJ",
+    "RUF",
+]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"**/settings/*.py" = ["F403", "F405"]
+"**/models.py" = ["RUF012"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
