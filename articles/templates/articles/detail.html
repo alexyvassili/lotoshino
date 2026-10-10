@@ -1,0 +1,17 @@
+{% extends "site_layout.html" %}
+{% load static %}
+
+{% block title %}{{ article.title }} — Лотошинский церковный округ{% endblock %}
+{% block description %}{{ article_content|striptags|truncatewords:30 }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'articles/content.css' %}">
+<link rel="stylesheet" href="{% static 'articles/detail.css' %}">
+{% endblock %}
+
+{% block maincontent %}
+<article class="article-page">
+    <h1 class="mainblock-header">{{ article.title }}</h1>
+    <div class="article-content ck-content">{{ article_content|safe }}</div>
+</article>
+{% endblock %}

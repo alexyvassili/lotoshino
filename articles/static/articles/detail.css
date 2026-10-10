@@ -1,0 +1,9 @@
+.article-page {
+    min-height: 40vh;
+}
+.article-page h1 {
+    overflow-wrap: anywhere;
+}
+.page-main-content-col .article-content p {
+    text-align: left;
+}

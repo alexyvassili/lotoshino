@@ -8,6 +8,8 @@ dependencies = [
     "django>=6.1.2,<6.2",
     "uvicorn[standard]>=0.54.0,<0.55",
     "psycopg[binary]>=3.3.6,<4",
+    "pillow (>=12.3.0,<13.0.0)",
+    "nh3 (>=0.3.7,<0.4.0)",
 ]
 
 [dependency-groups]

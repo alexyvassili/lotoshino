@@ -1,0 +1,57 @@
+/* Shared by the editor and article templates using class="article-content ck-content". */
+:is(.article-content, .ck-content) {
+    display: flow-root;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+}
+:is(.article-content, .ck-content) img {
+    max-width: 100%;
+    height: auto;
+}
+:is(.article-content, .ck-content) figure.image {
+    display: table;
+    clear: both;
+    max-width: 100%;
+    margin: 1em auto;
+}
+:is(.article-content, .ck-content) figure.image img {
+    display: block;
+    margin: 0 auto;
+}
+:is(.article-content, .ck-content) figure.image.image-style-align-left {
+    float: left;
+    clear: none;
+    max-width: 50%;
+    margin: 0.5em 1.5em 1em 0;
+}
+:is(.article-content, .ck-content) figure.image.image-style-align-right {
+    float: right;
+    clear: none;
+    max-width: 50%;
+    margin: 0.5em 0 1em 1.5em;
+}
+:is(.article-content, .ck-content) figure.image_resized {
+    display: block;
+}
+:is(.article-content, .ck-content) figure.image.image_resized {
+    max-width: 100%;
+}
+:is(.article-content, .ck-content) figure.image_resized img {
+    width: 100%;
+}
+:is(.article-content, .ck-content) figcaption {
+    display: table-caption;
+    caption-side: bottom;
+    font-size: 0.85em;
+    text-align: center;
+    padding: 0.5em;
+}
+@media (max-width: 640px) {
+    :is(.article-content, .ck-content) figure.image {
+        float: none !important;
+        clear: both !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 1em auto !important;
+    }
+}

@@ -1,0 +1,14 @@
+{% if request.resolver_match.view_name != 'index' %}
+<nav class="navbar main-navbar-nav" aria-label="Основная навигация">
+  <div class="container-fluid">
+    <ul id="main-navbar-ul" class="navbar-nav">
+      <li class="nav-item main-nav-item">
+        <a class="nav-link main-nav-link" href="{% url 'index' %}">Главная страница</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+{% endif %}
+<aside class="aside-content" aria-label="Календарь и видео">
+  {% include 'includes/aside_content.html' %}
+</aside>

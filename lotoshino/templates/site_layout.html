@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="main-content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-2 navbar-col">
+        {% include 'includes/sidebar.html' %}
+      </div>
+      <main class="{% block main_column_class %}col-md-7 main-content-col page-main-content-col{% endblock %}">
+        {% block maincontent %}{% endblock %}
+      </main>
+      <div class="col-sm-12 small-screen-aside-content">
+        {% include 'includes/aside_content.html' %}
+      </div>
+      {% block right_columns %}{% endblock %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -36,6 +36,8 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    "media_library.apps.MediaLibraryConfig",
+    "articles.apps.ArticlesConfig",
     "home.apps.HomeConfig",
     "django.contrib.admin",
     "django.contrib.auth",
