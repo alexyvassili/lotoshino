@@ -10,12 +10,17 @@
 
         async upload() {
             const file = await this.loader.file;
+            const limit = Number(document.querySelector('meta[name="site-upload-limit-mb"]')?.content);
+            if (limit > 0 && file.size > limit * 1024 * 1024) {
+                throw new Error(`Максимальный размер файла для загрузки — ${limit} МБ. Выберите файл меньшего размера.`);
+            }
             const data = new FormData();
             data.append("upload", file);
             const response = await fetch(this.textarea.dataset.uploadUrl, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
+                    "Accept": "application/json",
                     "X-CSRFToken": this.textarea.form.querySelector('[name="csrfmiddlewaretoken"]').value,
                 },
                 body: data,
@@ -25,7 +30,7 @@
             if (!response.ok || !result.url) {
                 throw new Error(result.error?.message || "Не удалось загрузить изображение. Проверьте права доступа и повторите попытку.");
             }
-            return { default: result.url };
+            return { urls: { default: result.url }, fullUrl: result.full_url };
         }
 
         abort() {
@@ -67,6 +72,8 @@
         document.body.append(dialog);
         let currentPage = 1;
         let request;
+        let preparing = false;
+        const preparation = new AbortController();
 
         async function load(page) {
             request?.abort();
@@ -93,9 +100,38 @@
                     const label = document.createElement("span");
                     label.textContent = item.title;
                     button.append(image, label);
-                    button.addEventListener("click", () => {
-                        editor.execute("insertImage", { source: [{ src: item.url, alt: item.alt }] });
-                        dialog.close();
+                    button.addEventListener("click", async () => {
+                        if (preparing) return;
+                        preparing = true;
+                        status.textContent = "Подготовка размеров для статьи…";
+                        const pending = editor.plugins.get("PendingActions");
+                        const action = pending.add("Подготовка изображения для статьи");
+                        try {
+                            const response = await fetch(item.prepare_url, {
+                                method: "POST",
+                                credentials: "same-origin",
+                                headers: {
+                                    "Accept": "application/json",
+                                    "X-CSRFToken": textarea.form.querySelector('[name="csrfmiddlewaretoken"]').value,
+                                },
+                                signal: preparation.signal,
+                            });
+                            const result = await response.json().catch(() => ({}));
+                            if (!response.ok || !result.url || !result.full_url) {
+                                throw new Error(result.error?.message || "Не удалось подготовить изображение.");
+                            }
+                            if (!dialog.open) return;
+                            editor.execute("insertImage", { source: [{
+                                src: result.url, alt: result.alt, linkHref: result.full_url,
+                                width: result.width, height: result.height,
+                            }] });
+                            dialog.close();
+                        } catch (error) {
+                            if (error.name !== "AbortError") status.textContent = error.message;
+                        } finally {
+                            preparing = false;
+                            pending.remove(action);
+                        }
                     });
                     grid.append(button);
                 }
@@ -111,6 +147,7 @@
         next.addEventListener("click", () => load(currentPage + 1));
         dialog.addEventListener("close", () => {
             request?.abort();
+            preparation.abort();
             dialog.remove();
             editor.editing.view.focus();
         }, { once: true });
@@ -124,6 +161,11 @@
             const CK = window.CKEDITOR;
             function ArticleImages(editor) {
                 editor.plugins.get("FileRepository").createUploadAdapter = (loader) => new UploadAdapter(loader, textarea);
+                editor.plugins.get("ImageUploadEditing").on("uploadComplete", (event, { imageElement, data }) => {
+                    if (data.fullUrl) {
+                        editor.model.change((writer) => writer.setAttribute("linkHref", data.fullUrl, imageElement));
+                    }
+                });
                 editor.ui.componentFactory.add("imageLibrary", (locale) => {
                     const button = new CK.ButtonView(locale);
                     button.set({ label: "Библиотека изображений", withText: true, tooltip: true });
@@ -137,7 +179,7 @@
                 language: "ru",
                 plugins: [
                     CK.Essentials, CK.Paragraph, CK.Heading, CK.Bold, CK.Italic,
-                    CK.Link, CK.List, CK.BlockQuote, CK.ImageBlock, CK.ImageCaption,
+                    CK.Link, CK.LinkImage, CK.List, CK.BlockQuote, CK.ImageBlock, CK.ImageCaption,
                     CK.ImageStyle, CK.ImageToolbar, CK.ImageUpload, CK.ImageResize,
                     CK.PendingActions,
                 ],

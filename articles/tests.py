@@ -8,6 +8,23 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_preview_and_full_image_link_survive_save_and_display(self):
+        preview = "/media/images/" + "a" * 32 + ".jpg"
+        full = "/media/images/" + "b" * 32 + ".jpg"
+        form = ArticleForm(
+            data={
+                "title": "Размеры",
+                "content": f'<figure class="image"><a href="{full}"><img src="{preview}" width="320" height="240" alt="Храм"></a></figure>',
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        article = form.save()
+        self.assertIn(f'href="{full}"', article.content)
+        self.assertIn(f'src="{preview}"', article.content)
+        response = self.client.get(article.get_absolute_url())
+        self.assertContains(response, f'href="{full}"')
+        self.assertContains(response, f'src="{preview}"')
+
     def test_image_styles_survive_save_and_edit(self):
         for index, image_style in enumerate(
             ("", " image-style-align-left", " image-style-align-right")

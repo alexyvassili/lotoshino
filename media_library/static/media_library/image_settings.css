@@ -1,0 +1,27 @@
+.model-imagesettings .aligned .form-row > .flex-container {
+    display: grid;
+    grid-template-columns: minmax(0, 20rem) 7rem;
+    align-items: center;
+    gap: 0.5rem 1rem;
+}
+
+.model-imagesettings .aligned .form-row label {
+    margin: 0;
+    padding: 0;
+    width: auto;
+}
+
+.model-imagesettings .aligned .form-row input[type="number"] {
+    grid-column: 2;
+    grid-row: 1;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+}
+
+.model-imagesettings .aligned .form-row .errorlist,
+.model-imagesettings .aligned .form-row .help {
+    grid-column: 1 / -1;
+    margin: 0;
+}

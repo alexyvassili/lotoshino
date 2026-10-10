@@ -1,7 +1,15 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+{% load static site_uploads %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
 
 {% block extrahead %}
   {{ block.super }}
+  {% site_upload_limit as upload_limit %}
+  <meta name="site-upload-limit-mb" content="{{ upload_limit }}">
+  <script src="{% static 'site_settings/upload_limit.js' %}" defer></script>
   <link rel="icon" href="{% static 'favicon.ico' %}" type="image/vnd.microsoft.icon">
 {% endblock %}
