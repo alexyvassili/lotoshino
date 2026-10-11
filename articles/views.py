@@ -10,7 +10,7 @@ from .models import Article
 
 @require_safe
 def detail(request, slug):
-    article = get_object_or_404(Article, slug=slug)
+    article = get_object_or_404(Article, slug=slug, is_published=True)
     content = clean_article_html(article.content)
     return render(
         request,

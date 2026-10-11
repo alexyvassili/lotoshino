@@ -28,6 +28,7 @@ class ArticleEditorTests(TestCase):
                 form = ArticleForm(
                     data={
                         "title": "Иллюстрация",
+                        "is_published": True,
                         "content": f'<p><a href="{url}" data-illustration="true">Смотреть</a></p>',
                     }
                 )
@@ -79,6 +80,7 @@ class ArticleEditorTests(TestCase):
                 form = ArticleForm(
                     data={
                         "title": f"Viewer {enabled}",
+                        "is_published": True,
                         "content": f'<figure class="image"><img data-viewer="{enabled}" data-full-size="{full}" src="{preview}"></figure>',
                     }
                 )
@@ -114,6 +116,7 @@ class ArticleEditorTests(TestCase):
         form = ArticleForm(
             data={
                 "title": "Размеры",
+                "is_published": True,
                 "content": f'<figure class="image"><a href="{full}"><img src="{preview}" width="320" height="240" alt="Храм"></a></figure>',
             }
         )
@@ -249,7 +252,13 @@ class ArticlePageTests(TestCase):
 
 class ArticleSlugTests(TestCase):
     def test_empty_form_slug_is_generated_in_latin(self):
-        form = ArticleForm(data={"title": "История храма", "content": "<p>Текст</p>"})
+        form = ArticleForm(
+            data={
+                "title": "История храма",
+                "content": "<p>Текст</p>",
+                "is_published": True,
+            }
+        )
         self.assertFalse(form.fields["slug"].required)
         self.assertIn("Если адрес не заполнен", form.fields["slug"].help_text)
         self.assertTrue(form.is_valid(), form.errors)
@@ -290,3 +299,44 @@ class ArticleSlugTests(TestCase):
         article.save(update_fields=["title", "slug"])
         article.refresh_from_db()
         self.assertEqual(article.slug, "novyy-zagolovok")
+
+
+class ArticlePublicationTests(TestCase):
+    def test_new_articles_are_published_by_default(self):
+        self.assertTrue(ArticleForm()["is_published"].value())
+        article = Article.objects.create(title="Published", content="Text")
+        self.assertTrue(article.is_published)
+        self.assertEqual(self.client.get(article.get_absolute_url()).status_code, 200)
+
+    def test_unchecked_checkbox_saves_unpublished_article(self):
+        form = ArticleForm(data={"title": "Draft", "content": "Draft text"})
+        self.assertTrue(form.is_valid(), form.errors)
+        article = form.save()
+        self.assertFalse(article.is_published)
+        self.assertEqual(self.client.get(article.get_absolute_url()).status_code, 404)
+        self.assertEqual(self.client.head(article.get_absolute_url()).status_code, 404)
+
+    def test_admin_can_unpublish_and_republish_existing_article(self):
+        user = get_user_model().objects.create_superuser(username="publisher")
+        self.client.force_login(user)
+        article = Article.objects.create(title="Article", content="Text")
+        change_url = reverse("admin:articles_article_change", args=[article.pk])
+        data = {
+            "title": article.title,
+            "slug": article.slug,
+            "content": article.content,
+        }
+        self.assertEqual(self.client.post(change_url, data).status_code, 302)
+        article.refresh_from_db()
+        self.assertFalse(article.is_published)
+        self.assertEqual(self.client.get(article.get_absolute_url()).status_code, 404)
+        self.assertEqual(self.client.get(change_url).status_code, 200)
+        data["is_published"] = "on"
+        self.assertEqual(self.client.post(change_url, data).status_code, 302)
+        self.assertEqual(self.client.get(article.get_absolute_url()).status_code, 200)
+
+    def test_admin_add_form_checks_publication_by_default(self):
+        user = get_user_model().objects.create_superuser(username="publisher")
+        self.client.force_login(user)
+        response = self.client.get(reverse("admin:articles_article_add"))
+        self.assertTrue(response.context["adminform"].form["is_published"].value())

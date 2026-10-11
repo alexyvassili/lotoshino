@@ -1,6 +1,45 @@
 (() => {
     "use strict";
 
+    function protectUnsavedChanges(textarea) {
+        const form = textarea.form;
+        const read = () => Object.fromEntries(
+            ["title", "slug", "is_published", "content"].map((name) => {
+                const field = form.elements.namedItem(name);
+                return [name, field?.type === "checkbox" ? field.checked : field?.value];
+            }),
+        );
+        const initial = read();
+        const hasValidationErrors = Boolean(form.querySelector(".errorlist"));
+        let submitting = false;
+        let pendingActions;
+        const resumeProtection = () => { submitting = false; };
+        window.addEventListener("pageshow", resumeProtection);
+        form.addEventListener("input", resumeProtection);
+        form.addEventListener("change", resumeProtection);
+
+        window.addEventListener("beforeunload", (event) => {
+            const changed = JSON.stringify(read()) !== JSON.stringify(initial);
+            if (!submitting && (changed || hasValidationErrors || pendingActions?.hasAny)) {
+                event.preventDefault();
+                event.returnValue = "";
+            }
+        });
+        window.addEventListener("submit", (event) => {
+            // Bubbling reaches window after the editor's upload check on the form.
+            if (event.target === form) {
+                submitting = !event.defaultPrevented;
+            }
+        });
+        return (editor) => {
+            // CKEditor normalizes HTML on startup; this is not a user edit.
+            initial.content = editor.getData();
+            editor.updateSourceElement();
+            pendingActions = editor.plugins.get("PendingActions");
+            editor.model.document.on("change:data", resumeProtection);
+        };
+    }
+
     class UploadAdapter {
         constructor(loader, textarea) {
             this.loader = loader;
@@ -157,6 +196,7 @@
     }
 
     async function initialize(textarea) {
+        const editorReady = protectUnsavedChanges(textarea);
         const status = textarea.closest(".article-editor-wrapper").querySelector(".article-editor-status");
         try {
             const CK = window.CKEDITOR;
@@ -316,6 +356,7 @@
                 },
             });
             textarea.required = false;
+            editorReady(editor);
             textarea.form.addEventListener("submit", (event) => {
                 if (editor.plugins.get("PendingActions").hasAny) {
                     event.preventDefault();

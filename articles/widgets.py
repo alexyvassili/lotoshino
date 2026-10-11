@@ -36,5 +36,5 @@ class ArticleEditorWidget(forms.Textarea):
         js = (
             "vendor/ckeditor5/49.0.0/ckeditor5.umd.js",
             "vendor/ckeditor5/49.0.0/translations/ru.umd.js",
-            "articles/editor.js",
+            "articles/editor.js?v=3",
         )

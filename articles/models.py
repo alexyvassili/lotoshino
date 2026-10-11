@@ -21,6 +21,7 @@ class Article(TimestampedModel):
         ),
     )
     content = models.TextField("Текст статьи")
+    is_published = models.BooleanField("Опубликовано", default=True)
 
     class Meta:
         verbose_name = "Статья"

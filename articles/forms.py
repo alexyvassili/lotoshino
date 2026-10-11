@@ -14,7 +14,7 @@ from .widgets import ArticleEditorWidget
 class ArticleForm(forms.ModelForm):
     class Meta:
         model = Article
-        fields = ("title", "slug", "content")
+        fields = ("title", "slug", "is_published", "content")
         widgets: ClassVar = {"content": ArticleEditorWidget}
 
     def clean_content(self):
