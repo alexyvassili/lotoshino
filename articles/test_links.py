@@ -121,3 +121,69 @@ class ArticleLinkWarningTests(TestCase):
             ),
             {"source"},
         )
+
+
+class ArticlePageLinksTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_superuser(username="page_link_editor")
+        self.client.force_login(user)
+        self.target = Article.objects.create(
+            title="Материал <strong>без публикации</strong>",
+            slug="linked-draft",
+            content="Текст",
+            is_published=False,
+        )
+        self.source = Article.objects.create(
+            title="Ссылки",
+            slug="page-links",
+            content=(
+                '<a href="/">Главная</a>'
+                '<a href="../linked-draft/?a=1#part">Материал</a>'
+                '<a href="http://testserver/articles/linked-draft/">Повтор</a>'
+                '<a href="/articles/missing/">Отсутствующая статья</a>'
+                '<a href="https://elsewhere.example/articles/external/">Внешняя</a>'
+                '<a href="/media/images/image.png">Иллюстрация</a>'
+                '<a href="/documents/1/download/">Документ</a>'
+                '<a href="/admin/">Админка</a>'
+            ),
+        )
+        self.url = reverse("admin:articles_article_change", args=[self.source.pk])
+
+    def test_page_links_before_created_with_status_and_new_tab(self):
+        response = self.client.get(self.url)
+        html = response.content.decode()
+        links = html.split('class="form-row field-page_links"', 1)[1].split(
+            'class="form-row field-created_at"', 1
+        )[0]
+        self.assertIn("Ссылки на страницы", links)
+        self.assertIn(
+            'href="/" target="_blank" rel="noopener noreferrer">Главная страница</a>',
+            links,
+        )
+        self.assertEqual(links.count('href="/articles/linked-draft/"'), 1)
+        self.assertIn("Материал &lt;strong&gt;без публикации&lt;/strong&gt;", links)
+        self.assertIn("не опубликовано", links)
+        self.assertIn("страница не найдена", links)
+        for ignored in (
+            "elsewhere.example",
+            "/media/",
+            "/documents/",
+            'href="/admin/"',
+        ):
+            self.assertNotIn(ignored, links)
+
+    def test_page_links_follow_saved_content_title_and_publication(self):
+        self.target.title = "Новое название"
+        self.target.is_published = True
+        self.target.save()
+        response = self.client.get(self.url)
+        self.assertContains(response, 'rel="noopener noreferrer">Новое название</a>')
+        self.source.content = "<p>Без ссылок</p>"
+        self.source.save()
+        self.assertContains(self.client.get(self.url), "Ссылок на страницы сайта нет.")
+
+    def test_add_form_handles_missing_article(self):
+        self.assertContains(
+            self.client.get(reverse("admin:articles_article_add")),
+            "Ссылок на страницы сайта нет.",
+        )

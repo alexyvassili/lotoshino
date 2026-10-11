@@ -5,18 +5,46 @@ from django.utils.html import format_html, format_html_join
 from media_library.views import image_library, prepare_article_image, upload_image
 
 from .forms import ArticleForm
-from .links import published_link_sources, unpublished_link_targets
+from .links import linked_site_pages, published_link_sources, unpublished_link_targets
 from .models import Article
 
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     form = ArticleForm
-    fields = ("title", "slug", "is_published", "content", "created_at", "updated_at")
-    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "title",
+        "slug",
+        "is_published",
+        "content",
+        "page_links",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = ("page_links", "created_at", "updated_at")
     list_display = ("title", "slug", "is_published", "created_at", "updated_at")
     list_filter = ("is_published",)
     search_fields = ("title", "slug", "content")
+
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            obj.linked_pages = linked_site_pages(obj, request.build_absolute_uri("/"))
+        return obj
+
+    @admin.display(description="Ссылки на страницы")
+    def page_links(self, obj):
+        pages = getattr(obj, "linked_pages", [])
+        if not pages:
+            return "Ссылок на страницы сайта нет."
+        return format_html(
+            "<ul>{}</ul>",
+            format_html_join(
+                "",
+                '<li><a href="{}" target="_blank" rel="noopener noreferrer">{}</a>{}</li>',
+                pages,
+            ),
+        )
 
     def save_model(self, request, obj, form, change):
         unpublishing = (

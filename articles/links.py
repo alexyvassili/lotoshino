@@ -1,7 +1,7 @@
 from html.parser import HTMLParser
 from urllib.parse import unquote, urljoin, urlsplit
 
-from django.urls import Resolver404, resolve
+from django.urls import Resolver404, resolve, reverse
 
 from .models import Article
 
@@ -12,6 +12,7 @@ class ArticleLinks(HTMLParser):
         self.page_url = page_url
         self.netloc = urlsplit(page_url).netloc.lower()
         self.slugs = set()
+        self.pages = {}
 
     def handle_starttag(self, tag, attrs):
         if tag != "a":
@@ -28,13 +29,40 @@ class ArticleLinks(HTMLParser):
         except ValueError, Resolver404:
             return
         if match.view_name == "articles:detail":
-            self.slugs.add(match.kwargs["slug"])
+            slug = match.kwargs["slug"]
+            self.slugs.add(slug)
+            self.pages.setdefault(
+                reverse("articles:detail", kwargs={"slug": slug}), slug
+            )
+        elif match.view_name == "index":
+            self.pages.setdefault(reverse("index"), None)
 
 
 def linked_article_slugs(content, page_url):
     parser = ArticleLinks(page_url)
     parser.feed(content)
     return parser.slugs
+
+
+def linked_site_pages(article, site_url):
+    parser = ArticleLinks(urljoin(site_url, article.get_absolute_url()))
+    parser.feed(article.content)
+    articles = {
+        target.slug: target
+        for target in Article.objects.filter(slug__in=parser.slugs).only(
+            "slug", "title", "is_published"
+        )
+    }
+    pages = []
+    for url, slug in parser.pages.items():
+        if slug is None:
+            pages.append((url, "Главная страница", ""))
+        elif target := articles.get(slug):
+            status = "" if target.is_published else " — не опубликовано"
+            pages.append((url, target.title, status))
+        else:
+            pages.append((url, url, " — страница не найдена"))
+    return pages
 
 
 def unpublished_link_targets(article, site_url):
