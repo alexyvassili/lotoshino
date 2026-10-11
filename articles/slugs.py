@@ -49,10 +49,10 @@ def article_slug_base(title):
     return slugify(title.lower().translate(RUSSIAN_TRANSLITERATION)) or "article"
 
 
-def available_slug(base, articles, max_length):
+def available_slug(base, articles, max_length, *, is_reserved=lambda slug: False):
     slug = base[:max_length].rstrip("-_")
     number = 2
-    while articles.filter(slug=slug).exists():
+    while is_reserved(slug) or articles.filter(slug=slug).exists():
         suffix = f"-{number}"
         slug = base[: max_length - len(suffix)].rstrip("-_") + suffix
         number += 1

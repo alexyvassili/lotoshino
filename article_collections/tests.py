@@ -72,7 +72,7 @@ class CollectionTests(TestCase):
         self.assertEqual(self.client.get("/does-not-exist/").status_code, 404)
 
     def test_invalid_collection_form_shows_errors(self):
-        for slug in ("", "/invalid/address/"):
+        for slug in ("/invalid/address/", "адрес"):
             response = self.client.post(
                 reverse("admin:article_collections_collection_add"),
                 {
@@ -86,6 +86,54 @@ class CollectionTests(TestCase):
             )
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.context["adminform"].form.errors)
+
+    def test_admin_generates_collection_url_from_title(self):
+        response = self.client.post(
+            reverse("admin:article_collections_collection_add"),
+            {
+                "title": "История благочиния",
+                "slug": "",
+                "is_published": "on",
+                "items-TOTAL_FORMS": "0",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        collection = Collection.objects.get(title="История благочиния")
+        self.assertEqual(collection.slug, "istoriya-blagochiniya")
+        self.assertEqual(collection.get_absolute_url(), "/istoriya-blagochiniya/")
+        self.assertEqual(
+            self.client.get(collection.get_absolute_url()).status_code, 200
+        )
+
+    def test_generated_urls_are_unique_and_skip_reserved_addresses(self):
+        for title in ("История благочиния", "Admin", "Я" * 255, "!!!"):
+            with self.subTest(title=title):
+                first = Collection.objects.create(title=title)
+                second = Collection.objects.create(title=title)
+                self.assertNotEqual(first.slug, second.slug)
+                self.assertLessEqual(len(second.slug), 100)
+                self.assertRegex(first.slug, r"^[a-z0-9_-]+$")
+                self.assertFalse(Collection.is_reserved_slug(first.slug))
+                self.assertFalse(Collection.is_reserved_slug(second.slug))
+                first.full_clean()
+                second.full_clean()
+        self.assertTrue(Collection.objects.filter(slug="admin-2").exists())
+
+    def test_renaming_preserves_url_and_clearing_regenerates(self):
+        collection = Collection.objects.create(title="История благочиния")
+        collection.title = "История храмов"
+        collection.save()
+        self.assertEqual(collection.slug, "istoriya-blagochiniya")
+        collection.slug = ""
+        collection.save(update_fields=["slug"])
+        collection.refresh_from_db()
+        self.assertEqual(collection.slug, "istoriya-hramov")
+        collection.slug = "custom-history"
+        collection.save()
+        self.assertEqual(collection.slug, "custom-history")
 
     def test_title_fallback_custom_override_and_duplicate(self):
         data = {

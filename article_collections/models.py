@@ -1,7 +1,8 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import IntegrityError, models, router, transaction
 from django.urls import Resolver404, resolve, reverse
 
+from articles.slugs import article_slug_base, available_slug
 from lotoshino.models import TimestampedModel
 
 
@@ -11,7 +12,12 @@ class Collection(TimestampedModel):
         "Адрес",
         max_length=100,
         unique=True,
-        help_text="Часть адреса без слешей: например, history для /history/.",
+        blank=True,
+        help_text=(
+            "Часть адреса без слешей: например, history для /history/. "
+            "Если адрес не заполнен, он будет сгенерирован автоматически "
+            "из названия латиницей при сохранении."
+        ),
     )
     introduction = models.TextField("Вступительный текст", blank=True)
     is_published = models.BooleanField("Опубликовано", default=True)
@@ -27,29 +33,53 @@ class Collection(TimestampedModel):
     def get_absolute_url(self):
         return reverse("article_collection", kwargs={"slug": self.slug})
 
+    @staticmethod
+    def is_reserved_slug(slug):
+        if slug in {"admin", "articles", "documents", "media", "static", "__debug__"}:
+            return True
+        try:
+            match = resolve(f"/{slug}/")
+        except Resolver404:
+            return False
+        return match.view_name != "article_collection"
+
     def clean(self):
         super().clean()
-        if self.slug in {
-            "admin",
-            "articles",
-            "documents",
-            "media",
-            "static",
-            "__debug__",
-        }:
+        if self.slug and self.is_reserved_slug(self.slug):
             raise ValidationError(
-                {"slug": "Этот адрес занят служебным разделом сайта."}
+                {
+                    "slug": "Этот адрес занят служебным разделом или другой страницей сайта."
+                }
             )
-        if not self.slug:
-            return
-        try:
-            match = resolve(f"/{self.slug}/")
-        except Resolver404:
-            return
-        if match.view_name != "article_collection":
-            raise ValidationError(
-                {"slug": "Этот адрес уже используется другой страницей сайта."}
+
+    def save(self, **kwargs):
+        if kwargs.get("update_fields") is not None and not kwargs["update_fields"]:
+            return super().save(**kwargs)
+        if self.slug:
+            return super().save(**kwargs)
+
+        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
+        kwargs["using"] = using
+        collections = type(self).objects.using(using)
+        if not self._state.adding:
+            collections = collections.exclude(pk=self.pk)
+        base = article_slug_base(self.title)
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"slug"}
+        while True:
+            self.slug = available_slug(
+                base,
+                collections,
+                self._meta.get_field("slug").max_length,
+                is_reserved=self.is_reserved_slug,
             )
+            try:
+                # Retry only a concurrent collision on an automatically chosen URL.
+                with transaction.atomic(using=using):
+                    return super().save(**kwargs)
+            except IntegrityError:
+                if not collections.filter(slug=self.slug).exists():
+                    raise
 
 
 class CollectionItem(models.Model):
