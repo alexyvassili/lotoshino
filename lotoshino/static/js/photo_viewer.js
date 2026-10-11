@@ -140,7 +140,8 @@ export default class PhotoViewer {
                 link.dataset.subHtml || '', 'text/html'
             ).body.textContent;
             return { link, src, download: imageURL(link.dataset.downloadUrl) || src,
-                thumb: imageURL(img?.currentSrc || img?.src || src),
+                localOnly: link.dataset.localImage === 'true',
+                thumb: img ? imageURL(img.currentSrc || img.src) : null,
                 alt: img?.alt || '', caption: caption.trim() };
         }).filter(item => item.src);
         this.abort = new AbortController();
@@ -219,12 +220,14 @@ export default class PhotoViewer {
             button.type = 'button';
             button.className = 'lpv-thumb';
             button.setAttribute('aria-label', `Фотография ${index + 1}${item.alt ? ': ' + item.alt : ''}`);
-            const image = document.createElement('img');
-            image.src = item.thumb;
-            image.alt = '';
-            image.loading = 'lazy';
-            image.draggable = false;
-            button.append(image);
+            if (item.thumb) {
+                const image = document.createElement('img');
+                image.src = item.thumb;
+                image.alt = '';
+                image.loading = 'lazy';
+                image.draggable = false;
+                button.append(image);
+            } else button.textContent = String(index + 1);
             this.listen(button, 'click', () => this.show(index));
             this.thumbs.append(button);
             return button;
@@ -316,6 +319,7 @@ export default class PhotoViewer {
     }
 
     close() {
+        this.imageRequest?.abort();
         if (!this.dialog.open) return;
         this.loadID++;
         this.dialog.close();
@@ -342,6 +346,7 @@ export default class PhotoViewer {
         this.index = (index % this.items.length + this.items.length) % this.items.length;
         const item = this.items[this.index];
         const request = ++this.loadID;
+        this.imageRequest?.abort();
         this.cancelGesture();
         this.scale = 1;
         this.pan = { x: 0, y: 0 };
@@ -355,6 +360,7 @@ export default class PhotoViewer {
         this.caption.textContent = item.caption || item.alt;
         this.caption.hidden = !this.caption.textContent;
         this.download.href = item.download;
+        this.download.hidden = item.localOnly;
         this.download.download = new URL(item.download).pathname.split('/').pop() || `photo-${this.index + 1}.jpg`;
         this.thumbButtons.forEach((button, n) => button.setAttribute('aria-current', String(n === this.index)));
         this.centerThumb();
@@ -366,6 +372,7 @@ export default class PhotoViewer {
         image.draggable = false;
         image.onload = () => {
             if (request !== this.loadID || !this.dialog.open) return;
+            this.download.hidden = false;
             this.image = image;
             this.canvas.replaceChildren(image);
             this.status.hidden = true;
@@ -379,9 +386,34 @@ export default class PhotoViewer {
         };
         image.onerror = () => {
             if (request !== this.loadID || !this.dialog.open) return;
-            this.status.textContent = 'Не удалось загрузить фотографию. Попробуйте другой снимок.';
+            this.download.hidden = true;
+            this.status.textContent = 'Не удалось открыть иллюстрацию. Возможно, изображение недоступно или ссылка ведёт на другой файл.';
         };
-        image.src = item.src;
+        if (item.localOnly) this.loadLocalImage(image, item.src, request);
+        else image.src = item.src;
+    }
+
+    async loadLocalImage(image, src, request) {
+        const controller = new AbortController();
+        this.imageRequest = controller;
+        let objectURL;
+        try {
+            // Refuse redirects as well as external URLs; never request an external
+            // image, even if a local link responds with a redirect to another site.
+            const response = await fetch(src, {
+                mode: 'same-origin', credentials: 'same-origin', redirect: 'error', signal: controller.signal,
+            });
+            if (!response.ok || !response.headers.get('Content-Type')?.startsWith('image/')) throw new Error('Invalid image');
+            const blob = await response.blob();
+            if (request !== this.loadID || !this.dialog.open) return;
+            objectURL = URL.createObjectURL(blob);
+            image.src = objectURL;
+            await image.decode();
+        } catch (error) {
+            if (error.name !== 'AbortError') image.onerror();
+        } finally {
+            if (objectURL) URL.revokeObjectURL(objectURL);
+        }
     }
 
     step(direction) { this.show(this.index + direction); }

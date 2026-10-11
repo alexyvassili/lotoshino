@@ -278,6 +278,23 @@ class ImageEditorTests(TestCase):
         with image.file.open("rb") as file:
             self.assertEqual(file.read(), original_content)
 
+    def test_image_url_copy_button_and_illustration_usage(self):
+        image = Image.objects.create(title="Illustration", file=uploaded_image())
+        article = Article.objects.create(
+            title="Linked illustration",
+            content=f'<a href="{image.file.url}" data-illustration="true">Иллюстрация</a>',
+        )
+        response = self.client.get(
+            reverse("admin:media_library_image_change", args=[image.pk])
+        )
+        self.assertContains(response, f'data-copy-url="{image.file.url}"')
+        self.assertContains(response, 'aria-label="Копировать относительный адрес"')
+        self.assertNotContains(response, 'type="file"')
+        self.assertContains(response, article.get_absolute_url())
+        self.assertEqual(
+            image_download_urls(article.content), {image.file.url: image.file.url}
+        )
+
     def test_image_usage_links_are_deduplicated_and_in_requested_columns(self):
         image = Image.objects.create(
             title="Used image", file=uploaded_image((1600, 1200))

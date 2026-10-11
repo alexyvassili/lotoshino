@@ -210,6 +210,51 @@
                     configureArticleImageViewer(this.editor);
                 }
             }
+            class ArticleIllustrations extends CK.Plugin {
+                afterInit() {
+                    const editor = this.editor;
+                    const linkUI = editor.plugins.get("LinkUI");
+                    const command = editor.commands.get("link");
+                    const decorator = command.manualDecorators.get("linkIllustration");
+                    const message = "Для иллюстрации укажите относительный адрес на этом сайте. Адрес должен начинаться символом /. Ссылки на внешние сайты использовать нельзя.";
+                    const localURL = (value) => {
+                        try { return /^\/(?!\/)[^\s\\]*$/.test(decodeURIComponent(value)); }
+                        catch { return false; }
+                    };
+                    // CKEditor 49 creates its link form lazily. Keep the switch in
+                    // that form, next to the URL, rather than in a separate panel.
+                    const createForm = linkUI._createFormView.bind(linkUI);
+                    linkUI._createFormView = () => {
+                        const form = createForm();
+                        const toggle = new CK.SwitchButtonView(editor.locale);
+                        toggle.set({ label: "Иллюстрация", withText: true });
+                        toggle.bind("isOn").to(decorator, "value", value => !!value);
+                        toggle.on("execute", () => { decorator.value = !toggle.isOn; form.resetFormStatus(); });
+                        form.children.add(toggle, 2);
+                        form.manualDecoratorsButtonView.isVisible = false;
+                        const render = form.render.bind(form);
+                        form.render = () => {
+                            render();
+                            form._focusables.add(toggle);
+                            form.focusTracker.add(toggle.element);
+                        };
+                        form.on("submit", event => {
+                            if (toggle.isOn && !localURL(form.url)) {
+                                event.stop();
+                                form.urlInputView.errorText = message;
+                                form.urlInputView.fieldView.focus();
+                            }
+                        }, { priority: "high" });
+                        return form;
+                    };
+                    command.on("execute", (event, [url, decorators = {}]) => {
+                        if ((decorators.linkIllustration ?? decorator.value) && !localURL(url)) {
+                            event.stop();
+                            status.textContent = message;
+                        }
+                    }, { priority: "highest" });
+                }
+            }
             function ArticleImages(editor) {
                 editor.plugins.get("FileRepository").createUploadAdapter = (loader) => new UploadAdapter(loader, textarea);
                 editor.plugins.get("ImageUploadEditing").on("uploadComplete", (event, { imageElement, data }) => {
@@ -240,7 +285,14 @@
                     CK.ImageStyle, CK.ImageToolbar, CK.ImageUpload, CK.ImageResize,
                     CK.PendingActions,
                 ],
-                extraPlugins: [ArticleImages, ArticleImageViewer],
+                extraPlugins: [ArticleImages, ArticleImageViewer, ArticleIllustrations],
+                link: {
+                    decorators: {
+                        illustration: { mode: "manual", label: "Иллюстрация", defaultValue: false,
+                            attributes: { "data-illustration": "true" } },
+                    },
+                    toolbar: ["linkPreview", "|", "editLink", "unlink"],
+                },
                 toolbar: {
                     items: ["undo", "redo", "|", "heading", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "|", "uploadImage", "imageLibrary"],
                     shouldNotGroupWhenFull: true,

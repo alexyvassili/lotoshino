@@ -121,11 +121,36 @@ class ImageAdmin(admin.ModelAdmin):
     search_fields = ("title", "alt_text")
 
     class Media:
-        js = (Script("media_library/image_preview.js", type="module"),)
+        js = (
+            Script("media_library/image_preview.js", type="module"),
+            "media_library/copy_image_url.js",
+        )
+        css: ClassVar = {"all": ("media_library/copy_image_url.css",)}
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        return tuple(
+            "file_link" if field == "file" and obj else field for field in fields
+        )
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
-        return (*fields, "file") if obj is not None else fields
+        return (*fields, "file", "file_link") if obj is not None else fields
+
+    @admin.display(description="Изображение")
+    def file_link(self, obj):
+        return format_html(
+            '<span class="image-file-link"><a href="{}">{}</a>'
+            '<button type="button" class="copy-image-url" data-copy-url="{}" '
+            'title="Копировать относительный адрес" aria-label="Копировать относительный адрес">'
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="1.7" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/>'
+            '<path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button>'
+            '<span class="copy-image-status" role="status" aria-live="polite"></span></span>',
+            obj.file.url,
+            obj.file.name,
+            obj.file.url,
+        )
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("renditions")

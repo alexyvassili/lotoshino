@@ -11,8 +11,21 @@ if (content) {
             return url.startsWith(imageBase) && /^[a-f0-9]{32}\.(jpg|png|webp)$/.test(url.slice(imageBase.length));
         } catch { return false; }
     };
+    for (const link of content.querySelectorAll('a[data-illustration="true"]')) {
+        const href = link.getAttribute('href');
+        try {
+            if (!/^\/(?!\/)[^\s\\]*$/.test(decodeURIComponent(href)) ||
+                new URL(href, window.location.href).origin !== window.location.origin) continue;
+        } catch { continue; }
+        link.classList.add('article-photo-viewer');
+        link.dataset.localImage = 'true';
+        link.dataset.caption = link.textContent.trim();
+        if (libraryImage(downloads[href])) link.dataset.downloadUrl = downloads[href];
+        link.setAttribute('aria-haspopup', 'dialog');
+    }
     for (const image of content.querySelectorAll('img')) {
         let link = image.closest('a');
+        if (link?.dataset.illustration === 'true') continue;
         const href = link?.getAttribute('href');
         if (image.dataset.viewer === 'false') {
             if (link && libraryImage(href)) link.replaceWith(...link.childNodes);

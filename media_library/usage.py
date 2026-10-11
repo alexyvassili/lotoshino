@@ -2,6 +2,7 @@ from collections import defaultdict
 from html.parser import HTMLParser
 
 from articles.html import clean_article_html
+from articles.illustrations import is_local_illustration_url
 from articles.models import Article
 
 
@@ -11,10 +12,15 @@ class ImageSources(HTMLParser):
         self.urls = set()
 
     def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
         if tag == "img":
-            src = dict(attrs).get("src")
+            src = attrs.get("src")
             if src:
                 self.urls.add(src)
+        elif tag == "a" and attrs.get("data-illustration") == "true":
+            href = attrs.get("href")
+            if is_local_illustration_url(href):
+                self.urls.add(href)
 
 
 def attach_image_pages(images):

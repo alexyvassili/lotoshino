@@ -8,6 +8,59 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_local_illustrations_survive_save_even_when_file_is_missing(self):
+        for url in (
+            "/media/images/missing.png",
+            "/not-an-image/",
+            "/media/documents/test.pdf",
+        ):
+            with self.subTest(url=url):
+                form = ArticleForm(
+                    data={
+                        "title": "Иллюстрация",
+                        "content": f'<p><a href="{url}" data-illustration="true">Смотреть</a></p>',
+                    }
+                )
+                self.assertTrue(form.is_valid(), form.errors)
+                article = form.save()
+                article.refresh_from_db()
+                self.assertIn('data-illustration="true"', article.content)
+                self.assertContains(
+                    self.client.get(article.get_absolute_url()),
+                    'data-illustration="true"',
+                )
+
+    def test_external_illustrations_are_rejected_and_model_save_removes_flag(self):
+        for url in (
+            "https://example.com/image.png",
+            "//example.com/image.png",
+            "/\\example.com/image.png",
+            "/%2fexample.com/image.png",
+            "javascript:alert(1)",
+            "images/test.png",
+            "",
+        ):
+            with self.subTest(url=url):
+                content = f'<a href="{url}" data-illustration="true">Иллюстрация</a>'
+                form = ArticleForm(data={"title": "External", "content": content})
+                self.assertFalse(form.is_valid())
+                self.assertIn("Ссылки на внешние сайты", str(form.errors))
+                article = Article.objects.create(title="External", content=content)
+                self.assertNotIn("data-illustration", article.content)
+        form = ArticleForm(
+            data={
+                "title": "Ordinary link",
+                "content": '<a href="https://example.com/">Сайт</a>',
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_illustration_sanitization_handles_quoted_markup_and_newlines(self):
+        content = '<p>Текст</p>\n<a title="&gt;" href="https://example.com/" data-illustration="true">Внешняя</a>\n<a href="/image.png" data-illustration="true">Местная</a>'
+        cleaned = clean_article_html(content)
+        self.assertEqual(cleaned.count('data-illustration="true"'), 1)
+        self.assertIn('href="/image.png" data-illustration="true"', cleaned)
+
     def test_viewer_setting_belongs_to_each_insertion_and_survives_save(self):
         preview = "/media/images/" + "a" * 32 + ".jpg"
         full = "/media/images/" + "b" * 32 + ".jpg"
