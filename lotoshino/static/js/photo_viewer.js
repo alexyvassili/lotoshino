@@ -61,7 +61,7 @@ const CSS = `
 .lpv-button svg { width: 24px; height: 24px; fill: none; stroke: currentColor;
     stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .lpv-toolbar {
-    display: flex; align-items: center; gap: 4px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex: 0 0 auto;
     padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(22px, env(safe-area-inset-left));
     background: #101114; z-index: 2;
 }
@@ -130,7 +130,7 @@ function icon(name) {
 }
 
 export default class PhotoViewer {
-    constructor(container, { itemSelector = '.gallery-item', triggerSelector = null, overlay = false } = {}) {
+    constructor(container, { itemSelector = '.gallery-item', triggerSelector = null, overlay = false, navigation = true } = {}) {
         this.container = typeof container === 'string' ? document.querySelector(container) : container;
         if (!this.container) throw new Error('PhotoViewer: gallery container not found');
         this.items = [...this.container.querySelectorAll(itemSelector)].map(link => {
@@ -152,6 +152,7 @@ export default class PhotoViewer {
         this.extraAttributes = [];
         this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
         this.overlay = overlay;
+        this.navigation = navigation;
         this.build();
         this.listen(this.container, 'click', event => {
             if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -194,6 +195,8 @@ export default class PhotoViewer {
                 <div class="lpv-thumbs" role="group" aria-label="Миниатюры фотографий"></div>
             </div></div>`;
         this.counter = this.dialog.querySelector('.lpv-counter');
+        this.counter.hidden = !this.navigation;
+        this.dialog.querySelector('.lpv-filmstrip').hidden = !this.navigation;
         this.canvas = this.dialog.querySelector('.lpv-canvas');
         this.status = this.dialog.querySelector('.lpv-status');
         this.caption = this.dialog.querySelector('.lpv-caption');
@@ -209,13 +212,13 @@ export default class PhotoViewer {
         this.dialog.querySelector('.lpv-toolbar').append(this.zoomButton, this.download, this.closeButton);
         this.previous = this.button('Предыдущая фотография', 'previous', 'lpv-nav lpv-prev');
         this.next = this.button('Следующая фотография', 'next', 'lpv-nav lpv-next');
-        this.previous.hidden = this.next.hidden = this.items.length < 2;
+        this.previous.hidden = this.next.hidden = !this.navigation || this.items.length < 2;
         this.dialog.querySelector('.lpv-stage').append(this.previous, this.next);
         this.stripPrevious = this.button('Прокрутить миниатюры влево', 'previous');
         this.stripNext = this.button('Прокрутить миниатюры вправо', 'next');
         this.thumbs.before(this.stripPrevious);
         this.thumbs.after(this.stripNext);
-        this.thumbButtons = this.items.map((item, index) => {
+        this.thumbButtons = (this.navigation ? this.items : []).map((item, index) => {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'lpv-thumb';
@@ -416,7 +419,7 @@ export default class PhotoViewer {
         }
     }
 
-    step(direction) { this.show(this.index + direction); }
+    step(direction) { if (this.navigation) this.show(this.index + direction); }
 
     fit() {
         if (!this.image) return;
@@ -459,6 +462,7 @@ export default class PhotoViewer {
     }
 
     centerThumb() {
+        if (!this.navigation) return;
         const current = this.thumbButtons[this.index];
         const rect = current.getBoundingClientRect();
         const parent = this.thumbs.getBoundingClientRect();
@@ -481,9 +485,9 @@ export default class PhotoViewer {
     onKey(event) {
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         // Keep native button/thumbnail Enter and Space behavior intact.
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        if (this.navigation && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
             event.preventDefault(); this.step(event.key === 'ArrowLeft' ? -1 : 1);
-        } else if (event.key === 'Home' || event.key === 'End') {
+        } else if (this.navigation && (event.key === 'Home' || event.key === 'End')) {
             event.preventDefault(); this.show(event.key === 'Home' ? 0 : this.items.length - 1);
         } else if (event.key.toLowerCase() === 'z') {
             event.preventDefault(); this.toggleZoom();

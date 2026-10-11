@@ -49,6 +49,6 @@ if (content) {
         link.setAttribute('aria-haspopup', 'dialog');
     }
     if (content.querySelector('.article-photo-viewer')) {
-        new PhotoViewer(content, { itemSelector: '.article-photo-viewer', overlay: true });
+        new PhotoViewer(content, { itemSelector: '.article-photo-viewer', overlay: true, navigation: false });
     }
 }

@@ -4,6 +4,9 @@
 .article-photo-viewer {
     cursor: zoom-in;
 }
+.article-photo-viewer[data-illustration="true"] {
+    cursor: pointer;
+}
 .article-page h1 {
     overflow-wrap: anywhere;
 }
