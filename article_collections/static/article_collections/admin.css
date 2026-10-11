@@ -1,7 +1,6 @@
 .collection-image-picker { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .collection-image-preview { max-width: 180px; max-height: 130px; object-fit: contain; }
 .collection-image-actions { display: flex; gap: 8px; }
-.collection-order-controls { display: inline-flex; gap: 6px; margin-left: 15px; }
 .collection-picker-dialog { width: min(850px, 92vw); max-height: 85vh; box-sizing: border-box; overflow: auto; border: 1px solid var(--hairline-color); border-radius: 8px; padding: 20px; background: var(--body-bg); color: var(--body-fg); }
 .collection-picker-dialog::backdrop { background: #0008; }
 .collection-picker-dialog header, .collection-picker-tools, .collection-picker-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }

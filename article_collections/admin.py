@@ -29,6 +29,8 @@ class CollectionItemInline(admin.StackedInline):
         if db_field.name == "image" and field:
             # The picker handles selection and upload without a second popup.
             field.widget = CollectionItemForm.base_fields["image"].widget
+        if db_field.name == "article" and field:
+            field.widget.can_delete_related = False
         return field
 
     @admin.display(description="Статус статьи")
@@ -51,7 +53,9 @@ class CollectionAdmin(admin.ModelAdmin):
     inlines = (CollectionItemInline,)
 
     class Media:
-        css: ClassVar = {"all": ("article_collections/admin.css",)}
+        css: ClassVar = {
+            "all": ("article_collections/admin.css", "article_collections/items.css")
+        }
         js = ("article_collections/admin.js",)
 
     def get_urls(self):

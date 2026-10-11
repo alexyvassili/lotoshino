@@ -13,27 +13,66 @@
     };
     const rows = () => [...document.querySelectorAll('#items-group .inline-related:not(.empty-form)')]
         .filter(row => row.querySelector('[name$="-article"]') && !row.querySelector('[name$="-DELETE"]')?.checked);
+    const summaries = new WeakMap();
+    let contents;
+    function itemTitle(row) {
+        const article = row.querySelector('[name$="-article"]');
+        return row.querySelector('[name$="-title"]').value.trim()
+            || (article.value && article.selectedOptions[0]?.textContent.trim())
+            || 'Новая статья';
+    }
     function numberRows() {
-        rows().forEach((row, index) => {
+        const items = rows();
+        const entries = items.map((row, index) => {
             row.querySelector('[name$="-position"]').value = index;
-            row.querySelector('.collection-move-up').disabled = index === 0;
-            row.querySelector('.collection-move-down').disabled = index === rows().length - 1;
+            const entry = summaries.get(row);
+            entry.querySelector('.collection-move-up').disabled = index === 0;
+            entry.querySelector('.collection-move-down').disabled = index === items.length - 1;
+            const link = entry.querySelector('a');
+            link.textContent = itemTitle(row);
+            link.href = `#${row.id}`;
+            return entry;
         });
+        contents?.replaceChildren(...entries);
+        if (!entries.length) contents?.append(element('li', 'Добавьте статьи в подборку.', 'collection-contents-empty'));
     }
     function initializeRow(row) {
         if (row.classList.contains('empty-form') || row.dataset.collectionReady) return;
         const article = row.querySelector('[name$="-article"]');
         if (!article) return;
         row.dataset.collectionReady = 'true';
+        // Keep the collection editor open and use the full article admin page.
+        const articleWidget = article.closest('.related-widget-wrapper');
+        articleWidget.querySelectorAll('.change-related, .view-related').forEach(link => {
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.removeAttribute('data-popup');
+            link.dataset.hrefTemplate = link.dataset.hrefTemplate.split('?')[0];
+            if (link.hasAttribute('href')) link.href = link.href.split('?')[0];
+        });
         const title = row.querySelector('[name$="-title"]');
         let automaticTitle = article.selectedOptions[0]?.textContent.trim() || '';
         const updateTitle = () => {
             const nextTitle = article.value ? article.selectedOptions[0].textContent.trim() : '';
             if (!title.value.trim() || title.value === automaticTitle) title.value = nextTitle;
             automaticTitle = nextTitle;
+            numberRows();
         };
         // Django's autocomplete emits a jQuery change event.
         window.django.jQuery(article).on('change', updateTitle);
+        title.addEventListener('input', () => {
+            summaries.get(row).querySelector('a').textContent = itemTitle(row);
+        });
+        const entry = element('li', '', 'collection-contents-item');
+        const link = element('a', itemTitle(row));
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            row.scrollIntoView({block: 'start'});
+            row.querySelector('h3').focus({preventScroll: true});
+        });
+        entry.append(link);
+        summaries.set(row, entry);
+        row.querySelector('h3').tabIndex = -1;
         const controls = element('span', '', 'collection-order-controls');
         for (const [direction, text] of [['up', '↑ Выше'], ['down', '↓ Ниже']]) {
             const control = button(text, `collection-move-${direction}`);
@@ -45,12 +84,13 @@
                     if (direction === 'up') other.before(row);
                     else other.after(row);
                     numberRows();
-                    control.focus();
+                    const focusTarget = control.disabled ? controls.querySelector('button:not(:disabled)') : control;
+                    focusTarget?.focus({preventScroll: true});
                 }
             });
             controls.append(control);
         }
-        row.querySelector('h3').append(controls);
+        entry.append(controls);
     }
 
     function openPicker(widget) {
@@ -160,10 +200,18 @@
     }
 
     const start = () => {
+        const heading = document.querySelector('#items-heading');
+        if (!heading) return;
+        const navigation = element('nav', '', 'collection-contents');
+        navigation.setAttribute('aria-label', 'Статьи подборки: порядок и переход к редактированию');
+        contents = element('ol');
+        navigation.append(contents);
+        heading.after(navigation);
         document.querySelectorAll('#items-group .inline-related').forEach(initializeRow);
         numberRows();
         document.addEventListener('formset:added', event => { initializeRow(event.target); numberRows(); });
-        document.addEventListener('formset:removed', numberRows);
+        // Django renumbers inline IDs after dispatching this event.
+        document.addEventListener('formset:removed', () => queueMicrotask(numberRows));
         document.addEventListener('change', event => { if (event.target.name?.endsWith('-DELETE')) numberRows(); });
         document.addEventListener('click', event => {
             const choose = event.target.closest('.collection-image-choose');
