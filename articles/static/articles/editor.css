@@ -11,17 +11,6 @@
 .article-editor-wrapper .ck-editor {
     width: 100%;
 }
-.article-editor-wrapper .ck-content h2,
-.article-editor-wrapper .ck-content h3 {
-    background: transparent;
-    color: inherit;
-    padding: 0;
-    margin: 1em 0 0.5em;
-    font-weight: bold;
-    line-height: 1.3;
-}
-.article-editor-wrapper .ck-content h2 { font-size: 1.5em; }
-.article-editor-wrapper .ck-content h3 { font-size: 1.25em; }
 .article-editor-status {
     color: var(--error-fg);
 }

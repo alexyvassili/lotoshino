@@ -5,8 +5,8 @@
 {% block description %}{{ article_content|striptags|truncatewords:30 }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'articles/content.css' %}">
-<link rel="stylesheet" href="{% static 'articles/detail.css' %}">
+<link rel="stylesheet" href="{% static 'articles/content.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'articles/detail.css' %}?v=3">
 {% endblock %}
 
 {% block maincontent %}

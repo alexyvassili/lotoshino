@@ -29,8 +29,8 @@ class ArticleEditorWidget(forms.Textarea):
         css: ClassVar = {
             "all": (
                 "vendor/ckeditor5/49.0.0/ckeditor5.css",
-                "articles/content.css",
-                "articles/editor.css",
+                "articles/content.css?v=4",
+                "articles/editor.css?v=2",
             )
         }
         js = (

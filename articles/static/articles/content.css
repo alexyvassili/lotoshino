@@ -4,6 +4,25 @@
     overflow-wrap: anywhere;
     line-height: 1.6;
 }
+:is(.article-content, .article-editor-wrapper .ck-content) :is(h2, h3) {
+    clear: both;
+    margin: 1.6em 0 0.65em;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+}
+:is(.article-content, .article-editor-wrapper .ck-content) h2 {
+    font-size: 1.125rem;
+}
+:is(.article-content, .article-editor-wrapper .ck-content) h3 {
+    font-size: 1rem;
+}
+:is(.article-content, .article-editor-wrapper .ck-content) :is(h2, h3):first-child {
+    margin-top: 0;
+}
 :is(.article-content, .ck-content) img {
     max-width: 100%;
     height: auto;
