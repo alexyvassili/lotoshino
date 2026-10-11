@@ -15,5 +15,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
+# Only development settings install the toolbar. Its callback also checks DEBUG.
+if "debug_toolbar" in settings.INSTALLED_APPS:
+    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
