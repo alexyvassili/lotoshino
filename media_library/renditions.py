@@ -42,7 +42,27 @@ def article_renditions(image):
                 resized.thumbnail(bounds, PillowImage.Resampling.LANCZOS)
                 rendition = rendition or ImageRendition(**lookup)
                 rendition.width, rendition.height = resized.size
-                rendition.file = encode_image(resized, file_format)
+                # Different profiles can produce identical actual dimensions.
+                # Share the existing file instead of creating a suffixed duplicate.
+                matching = ImageRendition.objects.filter(
+                    image=image,
+                    source_name=image.file.name,
+                    width=rendition.width,
+                    height=rendition.height,
+                )
+                reusable = next(
+                    (
+                        version
+                        for version in matching
+                        if version.file.storage.exists(version.file.name)
+                    ),
+                    None,
+                )
+                rendition.file = (
+                    reusable.file.name
+                    if reusable
+                    else encode_image(resized, file_format)
+                )
                 rendition.save()
             result[size] = rendition
     return result

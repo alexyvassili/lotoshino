@@ -12,6 +12,11 @@ def image_upload_path(instance, filename):
     return f"images/{uuid4().hex}{Path(filename).suffix.lower()}"
 
 
+def rendition_upload_path(instance, filename):
+    source = Path(instance.source_name)
+    return f"images/{source.stem}_{instance.width}x{instance.height}{Path(filename).suffix.lower()}"
+
+
 def dimension_field(label, default):
     return models.PositiveSmallIntegerField(
         label,
@@ -115,7 +120,7 @@ class ImageRendition(TimestampedModel):
     max_height = models.PositiveSmallIntegerField()
     width = models.PositiveSmallIntegerField()
     height = models.PositiveSmallIntegerField()
-    file = models.ImageField(upload_to=image_upload_path)
+    file = models.ImageField(upload_to=rendition_upload_path)
 
     class Meta:
         constraints = [

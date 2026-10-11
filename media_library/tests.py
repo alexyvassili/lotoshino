@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
@@ -408,6 +409,7 @@ class ImageEditorTests(TestCase):
                 )
                 self.assertEqual(response.status_code, 201)
                 image = Image.objects.get(pk=response.json()["id"])
+                self.assertRegex(Path(image.file.name).name, r"^[a-f0-9]{32}\.png$")
                 with PillowImage.open(image.file.path) as source:
                     self.assertEqual(source.size, expected_master)
                 for kind, expected in (
@@ -415,6 +417,10 @@ class ImageEditorTests(TestCase):
                     ("full", expected_full),
                 ):
                     rendition = image.renditions.get(kind=f"article_{kind}")
+                    self.assertEqual(
+                        rendition.file.name,
+                        f"images/{Path(image.file.name).stem}_{expected[0]}x{expected[1]}.png",
+                    )
                     with PillowImage.open(rendition.file.path) as result:
                         self.assertEqual(result.size, expected)
                         self.assertEqual((rendition.width, rendition.height), expected)
@@ -446,6 +452,57 @@ class ImageEditorTests(TestCase):
         self.assertContains(response, "Статья — превью", count=4)
         self.assertContains(response, "Статья — полная версия")
         self.assertContains(response, "1600 &times; 1200 px")
+
+    def test_equal_actual_sizes_reuse_file_across_different_bounds(self):
+        image = Image.objects.create(
+            title="Same dimensions", file=uploaded_image((1600, 800))
+        )
+        old = article_renditions(image)["preview"]
+        settings = ImageSettings.load()
+        settings.article_preview_width, settings.article_preview_height = 400, 160
+        settings.save()
+        new = article_renditions(image)["preview"]
+        self.assertNotEqual(old.pk, new.pk)
+        self.assertEqual((new.width, new.height), (320, 160))
+        self.assertEqual(old.file.name, new.file.name)
+
+    def test_legacy_rendition_name_stays_unchanged(self):
+        image = Image.objects.create(
+            title="Legacy name", file=uploaded_image((1600, 1200))
+        )
+        name = "images/" + "a" * 32 + ".png"
+        image.file.storage.save(name, uploaded_image((320, 240)))
+        preview = ImageRendition.objects.create(
+            image=image,
+            source_name=image.file.name,
+            kind="article_preview",
+            max_width=320,
+            max_height=240,
+            width=320,
+            height=240,
+            file=name,
+        )
+        self.assertEqual(article_renditions(image)["preview"].file.name, name)
+        preview.refresh_from_db()
+        self.assertEqual(preview.file.name, name)
+
+    def test_rendition_name_collision_does_not_overwrite_existing_file(self):
+        image = Image.objects.create(
+            title="Collision", file=uploaded_image((1600, 1200))
+        )
+        name = f"images/{Path(image.file.name).stem}_320x240.png"
+        original = uploaded_image((50, 50))
+        original_bytes = original.read()
+        original.seek(0)
+        image.file.storage.save(name, original)
+        preview = article_renditions(image)["preview"]
+        self.assertNotEqual(preview.file.name, name)
+        with image.file.storage.open(name) as file:
+            self.assertEqual(file.read(), original_bytes)
+        article = Article.objects.create(
+            title="Collision image", content=f'<img src="{preview.file.url}">'
+        )
+        self.assertIn(preview.file.url, article.content)
 
     def test_viewer_downloads_master_while_displaying_full_rendition(self):
         response = self.client.post(

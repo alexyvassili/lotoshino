@@ -8,6 +8,16 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_actual_dimension_names_survive_html_cleanup(self):
+        for name in (
+            "a" * 32 + ".jpg",
+            "a" * 32 + "_320x222.jpg",
+            "a" * 32 + "_320x222_Ab12xYz.png",
+        ):
+            url = "/media/images/" + name
+            content = f'<img src="{url}" data-full-size="{url}">'
+            self.assertEqual(clean_article_html(content), content)
+
     def test_local_illustrations_survive_save_even_when_file_is_missing(self):
         for url in (
             "/media/images/missing.png",
