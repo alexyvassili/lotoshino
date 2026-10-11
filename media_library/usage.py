@@ -1,6 +1,7 @@
 from collections import defaultdict
 from html.parser import HTMLParser
 
+from article_collections.models import CollectionItem
 from articles.html import clean_article_html
 from articles.illustrations import is_local_illustration_url
 from articles.models import Article
@@ -51,4 +52,17 @@ def attach_image_pages(images):
         for pk in used_ids:
             images_by_id[pk].used_pages.append(
                 (article.get_absolute_url(), article.title)
+            )
+
+    seen = set()
+    for item in (
+        CollectionItem.objects.filter(image_id__in=images_by_id)
+        .select_related("collection")
+        .order_by("collection__title", "collection_id")
+    ):
+        key = (item.image_id, item.collection_id)
+        if key not in seen:
+            seen.add(key)
+            images_by_id[item.image_id].used_pages.append(
+                (item.collection.get_absolute_url(), item.collection.title)
             )

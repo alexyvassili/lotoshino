@@ -3,6 +3,8 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 from django.urls import Resolver404, resolve, reverse
 
+from article_collections.models import Collection
+
 from .models import Article
 
 
@@ -13,6 +15,7 @@ class ArticleLinks(HTMLParser):
         self.netloc = urlsplit(page_url).netloc.lower()
         self.slugs = set()
         self.pages = {}
+        self.collection_slugs = set()
 
     def handle_starttag(self, tag, attrs):
         if tag != "a":
@@ -34,6 +37,13 @@ class ArticleLinks(HTMLParser):
             self.pages.setdefault(
                 reverse("articles:detail", kwargs={"slug": slug}), slug
             )
+        elif match.view_name == "article_collection":
+            slug = match.kwargs["slug"]
+            self.collection_slugs.add(slug)
+            self.pages.setdefault(
+                reverse("article_collection", kwargs={"slug": slug}),
+                ("collection", slug),
+            )
         elif match.view_name == "index":
             self.pages.setdefault(reverse("index"), None)
 
@@ -53,10 +63,26 @@ def linked_site_pages(article, site_url):
             "slug", "title", "is_published"
         )
     }
+    collections = {
+        target.slug: target
+        for target in Collection.objects.filter(slug__in=parser.collection_slugs)
+    }
     pages = []
     for url, slug in parser.pages.items():
         if slug is None:
             pages.append((url, "Главная страница", ""))
+        elif isinstance(slug, tuple):
+            target = collections.get(slug[1])
+            if target:
+                pages.append(
+                    (
+                        url,
+                        target.title,
+                        "" if target.is_published else " — не опубликовано",
+                    )
+                )
+            else:
+                pages.append((url, url, " — страница не найдена"))
         elif target := articles.get(slug):
             status = "" if target.is_published else " — не опубликовано"
             pages.append((url, target.title, status))

@@ -1,0 +1,19 @@
+{% extends "site_layout.html" %}
+{% load static %}
+{% block title %}{{ collection.title }} — Лотошинский церковный округ{% endblock %}
+{% block description %}{{ collection.introduction|truncatewords:30 }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'article_collections/detail.css' %}">{% endblock %}
+{% block maincontent %}
+<section class="article-collection">
+    <h1 class="mainblock-header">{{ collection.title }}</h1>
+    {% if collection.introduction %}<div class="collection-introduction">{{ collection.introduction|linebreaks }}</div>{% endif %}
+    {% for item in items %}
+    <article class="collection-entry">
+        <h2><a href="{{ item.article.get_absolute_url }}">{{ item.title }}</a></h2>
+        {% if item.preview %}<a class="collection-entry-image" href="{{ item.article.get_absolute_url }}"><img src="{{ item.preview.url }}" width="{{ item.preview.width }}" height="{{ item.preview.height }}" alt="{{ item.image.alt_text|default:item.title }}"></a>{% endif %}
+        <div class="collection-annotation">{{ item.annotation|linebreaks }}</div>
+        <p class="collection-read-more"><a href="{{ item.article.get_absolute_url }}">{{ item.link_text }}</a></p>
+    </article>
+    {% empty %}<p>Статьи скоро появятся.</p>{% endfor %}
+</section>
+{% endblock %}

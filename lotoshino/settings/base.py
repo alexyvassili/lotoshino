@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "site_settings.apps.SiteSettingsConfig",
     "media_library.apps.MediaLibraryConfig",
     "articles.apps.ArticlesConfig",
+    "article_collections.apps.ArticleCollectionsConfig",
     "home.apps.HomeConfig",
     "django.contrib.admin",
     "django.contrib.auth",

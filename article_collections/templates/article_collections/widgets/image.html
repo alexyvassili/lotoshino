@@ -1,0 +1,9 @@
+<div class="collection-image-picker" data-picker-url="{{ picker_url }}" data-upload-url="{{ upload_url }}" data-prepare-url="{{ prepare_url }}" data-image-types="{{ image_types }}">
+    {% include "django/forms/widgets/hidden.html" %}
+    <img class="collection-image-preview" {% if selected_image %}src="{{ selected_image.url }}" alt="{{ selected_image.title }}"{% else %}hidden alt=""{% endif %}>
+    <span class="collection-image-title">{{ selected_image.title|default:"Изображение не выбрано" }}</span>
+    <div class="collection-image-actions">
+        <button type="button" class="button collection-image-choose">Выбрать изображение</button>
+        <button type="button" class="button collection-image-clear" {% if not selected_image %}hidden{% endif %}>Убрать</button>
+    </div>
+</div>

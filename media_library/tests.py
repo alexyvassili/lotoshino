@@ -388,7 +388,7 @@ class ImageEditorTests(TestCase):
             title="Multiple images",
             content="".join(f'<img src="{image.file.url}">' for image in images),
         )
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):  # Images, renditions, articles, collections.
             found = list(Image.objects.prefetch_related("renditions"))
             attach_image_pages(found)
         for image in found:

@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from article_collections.views import detail as collection_detail
 from document_library.views import download
 
 from .views import favicon, index
@@ -21,3 +22,5 @@ if "debug_toolbar" in settings.INSTALLED_APPS:
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += [path("<slug:slug>/", collection_detail, name="article_collection")]

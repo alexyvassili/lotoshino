@@ -1,0 +1,13 @@
+.article-collection { overflow-wrap: anywhere; }
+.collection-introduction { margin-bottom: 1.5rem; }
+.collection-entry { display: flow-root; margin: 0 0 2rem; line-height: 1.6; }
+.collection-entry h2 { margin: 0 0 1rem; font-size: 18px; line-height: 1.4; font-weight: 600; }
+.collection-entry h2 a { color: inherit; text-decoration: none; }
+.collection-entry h2 a:hover { text-decoration: underline; }
+.collection-entry-image { float: left; max-width: 48%; margin: 0 1.5rem 0.8rem 0; }
+.collection-entry-image img { display: block; max-width: 100%; height: auto; }
+.page-main-content-col .article-collection p { text-align: left; }
+.collection-read-more { margin-bottom: 0; }
+@media (max-width: 640px) {
+    .collection-entry-image { float: none; display: block; max-width: 100%; margin: 0 0 1rem; }
+}
