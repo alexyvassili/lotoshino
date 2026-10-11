@@ -14,9 +14,10 @@ class DocumentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["file"].widget.attrs["accept"] = ",".join(
-            allowed_extensions(DOCUMENT_FORMATS)
-        )
+        if "file" in self.fields:
+            self.fields["file"].widget.attrs["accept"] = ",".join(
+                allowed_extensions(DOCUMENT_FORMATS)
+            )
 
     def clean_file(self):
         upload = self.cleaned_data["file"]

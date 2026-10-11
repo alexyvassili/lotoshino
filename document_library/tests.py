@@ -215,6 +215,33 @@ class DocumentLibraryTests(TestCase):
                 self.assertFalse(form.is_valid())
                 self.assertIn("file", form.errors)
 
+    def test_existing_document_cannot_be_replaced_in_admin(self):
+        original = supported_documents()["rtf"]
+        self.assertEqual(self.upload("original.rtf", original).status_code, 302)
+        document = Document.objects.get()
+        original_name = document.file.name
+        url = reverse("admin:document_library_document_change", args=[document.pk])
+        self.assertNotContains(self.client.get(url), 'type="file"')
+        self.assertContains(self.client.get(self.add_url), 'type="file"')
+        response = self.client.post(
+            url,
+            {
+                "title": "Renamed",
+                "file": SimpleUploadedFile(
+                    "replacement.pdf", supported_documents()["pdf"]
+                ),
+                "file-clear": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        document.refresh_from_db()
+        self.assertEqual(document.title, "Renamed")
+        self.assertEqual(document.file.name, original_name)
+        self.assertEqual(document.original_name, "original.rtf")
+        self.assertEqual(document.file_format, "RTF")
+        with document.file.open("rb") as file:
+            self.assertEqual(file.read(), original)
+
     def test_size_limit_and_permissions(self):
         settings = SiteSettings.load()
         settings.max_upload_size_mb = 1

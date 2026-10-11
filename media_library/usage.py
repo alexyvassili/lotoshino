@@ -1,0 +1,48 @@
+from collections import defaultdict
+from html.parser import HTMLParser
+
+from articles.html import clean_article_html
+from articles.models import Article
+
+
+class ImageSources(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.urls = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "img":
+            src = dict(attrs).get("src")
+            if src:
+                self.urls.add(src)
+
+
+def attach_image_pages(images):
+    """Read article content once per admin page, including historical renditions."""
+    images_by_url = defaultdict(list)
+    images_by_id = {}
+    for image in images:
+        image.used_pages = []
+        images_by_id[image.pk] = image
+        urls = {image.file.url}
+        for rendition in image.renditions.all():
+            urls.add(rendition.file.url)
+            # An older article may still reference the master replaced later.
+            urls.add(image.file.storage.url(rendition.source_name))
+        for url in urls:
+            images_by_url[url].append(image.pk)
+    if not images_by_id:
+        return
+
+    for article in (
+        Article.objects.only("pk", "title", "slug", "content")
+        .order_by("title", "pk")
+        .iterator()
+    ):
+        sources = ImageSources()
+        sources.feed(clean_article_html(article.content))
+        used_ids = {pk for url in sources.urls for pk in images_by_url.get(url, ())}
+        for pk in used_ids:
+            images_by_id[pk].used_pages.append(
+                (article.get_absolute_url(), article.title)
+            )

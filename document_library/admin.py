@@ -31,6 +31,10 @@ class DocumentAdmin(admin.ModelAdmin):
     list_filter = ("file_format",)
     search_fields = ("title", "original_name")
 
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        return (*fields, "file") if obj is not None else fields
+
     @admin.display(description="Размер файла")
     def file_size(self, obj):
         if not obj or not obj.file:

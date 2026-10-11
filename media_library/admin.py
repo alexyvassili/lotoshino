@@ -10,6 +10,7 @@ from django.utils.html import format_html, format_html_join
 
 from .forms import ImageForm
 from .models import Image, ImageSettings
+from .usage import attach_image_pages
 
 RESIZE_DESCRIPTION = (
     "Изображение уменьшается до заданной ширины, сохраняя пропорции. "
@@ -105,15 +106,56 @@ class ImageAdmin(admin.ModelAdmin):
         "alt_text",
         "preview",
         "available_sizes",
+        "used_on_pages",
         "created_at",
         "updated_at",
     )
-    readonly_fields = ("preview", "available_sizes", "created_at", "updated_at")
-    list_display = ("title", "preview", "updated_at")
+    readonly_fields = (
+        "preview",
+        "available_sizes",
+        "used_on_pages",
+        "created_at",
+        "updated_at",
+    )
+    list_display = ("title", "preview", "used_on_pages", "updated_at")
     search_fields = ("title", "alt_text")
 
     class Media:
         js = (Script("media_library/image_preview.js", type="module"),)
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        return (*fields, "file") if obj is not None else fields
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("renditions")
+
+    def changelist_view(self, request, extra_context=None):
+        response = super().changelist_view(request, extra_context)
+        context = getattr(response, "context_data", None)
+        if context and "cl" in context:
+            attach_image_pages(context["cl"].result_list)
+        return response
+
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            attach_image_pages([obj])
+        return obj
+
+    @admin.display(description="Используется на страницах")
+    def used_on_pages(self, obj):
+        pages = getattr(obj, "used_pages", ())
+        if not pages:
+            return "Нет использований."
+        return format_html(
+            "<ul>{}</ul>",
+            format_html_join(
+                "",
+                '<li><a href="{}" target="_blank" rel="noopener noreferrer">{}</a></li>',
+                pages,
+            ),
+        )
 
     @admin.display(description="Предпросмотр")
     def preview(self, obj):

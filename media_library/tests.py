@@ -11,10 +11,12 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image as PillowImage
 
+from articles.models import Article
 from site_settings.models import SiteSettings
 
 from .models import Image, ImageRendition, ImageSettings
 from .renditions import article_renditions
+from .usage import attach_image_pages
 
 
 def uploaded_image(size=(80, 60)):
@@ -247,6 +249,133 @@ class ImageEditorTests(TestCase):
         self.assertContains(response, 'data-article-editor="true"')
         self.assertContains(response, self.upload_url)
         self.assertContains(response, self.library_url)
+
+    def test_existing_image_cannot_be_replaced_in_admin(self):
+        image = Image.objects.create(title="Original", file=uploaded_image())
+        original_name = image.file.name
+        original_content = image.file.read()
+        image.file.close()
+        url = reverse("admin:media_library_image_change", args=[image.pk])
+        self.assertNotContains(self.client.get(url), 'type="file"')
+        self.assertContains(
+            self.client.get(reverse("admin:media_library_image_add")), 'type="file"'
+        )
+        response = self.client.post(
+            url,
+            {
+                "title": "Renamed",
+                "alt_text": "Description",
+                "file": uploaded_image((160, 120)),
+                "file-clear": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        image.refresh_from_db()
+        self.assertEqual(image.title, "Renamed")
+        self.assertEqual(image.alt_text, "Description")
+        self.assertEqual(image.file.name, original_name)
+        with image.file.open("rb") as file:
+            self.assertEqual(file.read(), original_content)
+
+    def test_image_usage_links_are_deduplicated_and_in_requested_columns(self):
+        image = Image.objects.create(
+            title="Used image", file=uploaded_image((1600, 1200))
+        )
+        versions = article_renditions(image)
+        article = Article.objects.create(
+            title="Статья <пример> & история",
+            content=f'<img src="{image.file.url}"><figure class="image">'
+            f'<a href="{versions["full"].file.url}"><img src="{versions["preview"].file.url}"></a></figure>',
+        )
+        other = Article.objects.create(
+            title="Полная версия", content=f'<img src="{versions["full"].file.url}">'
+        )
+        unrelated = Article.objects.create(
+            title="Упоминание без картинки",
+            content=f'<p>{image.file.url}</p><a href="{image.file.url}">Скачать</a>',
+        )
+        for url in (
+            reverse("admin:media_library_image_changelist"),
+            reverse("admin:media_library_image_change", args=[image.pk]),
+        ):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(
+                    response,
+                    f'href="{article.get_absolute_url()}" target="_blank" rel="noopener noreferrer"',
+                    count=1,
+                )
+                self.assertContains(
+                    response,
+                    f'href="{other.get_absolute_url()}" target="_blank" rel="noopener noreferrer"',
+                    count=1,
+                )
+                self.assertNotContains(
+                    response, f'href="{unrelated.get_absolute_url()}"'
+                )
+                self.assertContains(response, "Статья &lt;пример&gt; &amp; история")
+        response = self.client.get(reverse("admin:media_library_image_changelist"))
+        columns = list(response.context["cl"].list_display)
+        self.assertEqual(columns[columns.index("preview") + 1], "used_on_pages")
+        response = self.client.get(
+            reverse("admin:media_library_image_change", args=[image.pk])
+        )
+        html = response.content.decode()
+        self.assertLess(
+            html.index("field-available_sizes"), html.index("field-used_on_pages")
+        )
+
+    def test_usage_tracks_changes_and_historical_versions_without_stale_cache(self):
+        image = Image.objects.create(
+            title="Versions", file=uploaded_image((1600, 1200))
+        )
+        versions = article_renditions(image)
+        old_master = image.file.url
+        article = Article.objects.create(
+            title="Old preview", content=f'<img src="{versions["preview"].file.url}">'
+        )
+        master_article = Article.objects.create(
+            title="Old master", content=f'<img src="{old_master}">'
+        )
+        image.file = uploaded_image((1200, 1600))
+        image.save()
+        article_renditions(image)
+        attach_image_pages([image])
+        self.assertEqual(
+            set(image.used_pages),
+            {
+                (article.get_absolute_url(), article.title),
+                (master_article.get_absolute_url(), master_article.title),
+            },
+        )
+        article.title, article.slug = "New name", "new-address"
+        article.save()
+        master_article.delete()
+        attach_image_pages([image])
+        self.assertEqual(image.used_pages, [(article.get_absolute_url(), "New name")])
+        article.content = "<p>Без изображения</p>"
+        article.save()
+        response = self.client.get(
+            reverse("admin:media_library_image_change", args=[image.pk])
+        )
+        self.assertContains(response, "Нет использований.")
+
+    def test_usage_scans_articles_once_for_multiple_images(self):
+        images = [
+            Image.objects.create(title=f"Image {index}", file=uploaded_image())
+            for index in range(3)
+        ]
+        article = Article.objects.create(
+            title="Multiple images",
+            content="".join(f'<img src="{image.file.url}">' for image in images),
+        )
+        with self.assertNumQueries(3):
+            found = list(Image.objects.prefetch_related("renditions"))
+            attach_image_pages(found)
+        for image in found:
+            self.assertEqual(
+                image.used_pages, [(article.get_absolute_url(), article.title)]
+            )
 
     def test_article_sizes_use_master_and_orientation_without_upscaling(self):
         for size, expected_master, expected_preview, expected_full in (

@@ -13,9 +13,10 @@ from .processing import encode_image
 class ImageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["file"].widget.attrs["accept"] = ",".join(
-            allowed_extensions(IMAGE_FORMATS)
-        )
+        if "file" in self.fields:
+            self.fields["file"].widget.attrs["accept"] = ",".join(
+                allowed_extensions(IMAGE_FORMATS)
+            )
 
     class Meta:
         model = Image
