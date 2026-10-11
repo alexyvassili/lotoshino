@@ -1,6 +1,9 @@
 .article-page {
     min-height: 40vh;
 }
+.article-photo-viewer {
+    cursor: zoom-in;
+}
 .article-page h1 {
     overflow-wrap: anywhere;
 }

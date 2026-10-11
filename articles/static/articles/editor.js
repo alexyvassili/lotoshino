@@ -123,6 +123,7 @@
                             if (!dialog.open) return;
                             editor.execute("insertImage", { source: [{
                                 src: result.url, alt: result.alt, linkHref: result.full_url,
+                                articleFullSize: result.full_url, articleViewer: "true",
                                 width: result.width, height: result.height,
                             }] });
                             dialog.close();
@@ -159,11 +160,67 @@
         const status = textarea.closest(".article-editor-wrapper").querySelector(".article-editor-status");
         try {
             const CK = window.CKEDITOR;
+            function configureArticleImageViewer(editor) {
+                const imageUtils = editor.plugins.get("ImageUtils");
+                editor.model.schema.extend("imageBlock", { allowAttributes: ["articleViewer", "articleFullSize"] });
+                for (const [model, attribute] of [["articleViewer", "data-viewer"], ["articleFullSize", "data-full-size"]]) {
+                    editor.conversion.for("upcast").attributeToAttribute({
+                        view: { name: "img", key: attribute }, model,
+                    });
+                    editor.conversion.for("downcast").add((dispatcher) => {
+                        dispatcher.on(`attribute:${model}:imageBlock`, (event, data, api) => {
+                            if (!api.consumable.consume(data.item, event.name)) return;
+                            const image = imageUtils.findViewImgElement(api.mapper.toViewElement(data.item));
+                            if (data.attributeNewValue === null) api.writer.removeAttribute(attribute, image);
+                            else api.writer.setAttribute(attribute, data.attributeNewValue, image);
+                        });
+                    });
+                }
+                editor.ui.componentFactory.add("articleImageViewer", (locale) => {
+                    const toggle = new CK.SwitchButtonView(locale);
+                    toggle.set({ label: "Открывать в полном размере", withText: true, tooltip: "Открывать исходное изображение в просмотрщике" });
+                    const selectedImage = () => editor.model.document.selection.getSelectedElement();
+                    const update = () => {
+                        const image = selectedImage();
+                        toggle.isEnabled = !editor.isReadOnly && imageUtils.isBlockImage(image);
+                        toggle.isOn = toggle.isEnabled && image.getAttribute("articleViewer") !== "false";
+                    };
+                    editor.model.document.selection.on("change", update);
+                    editor.model.document.on("change:data", update);
+                    editor.on("change:isReadOnly", update);
+                    toggle.on("execute", () => {
+                        const image = selectedImage();
+                        if (!imageUtils.isBlockImage(image)) return;
+                        const enabled = image.getAttribute("articleViewer") === "false";
+                        const fullSize = image.getAttribute("articleFullSize") || image.getAttribute("linkHref") || image.getAttribute("src");
+                        editor.model.change((writer) => {
+                            writer.setAttribute("articleViewer", String(enabled), image);
+                            writer.setAttribute("articleFullSize", fullSize, image);
+                            if (enabled) writer.setAttribute("linkHref", fullSize, image);
+                            else if (image.getAttribute("linkHref") === fullSize) writer.removeAttribute("linkHref", image);
+                        });
+                        editor.editing.view.focus();
+                    });
+                    update();
+                    return toggle;
+                });
+            }
+            class ArticleImageViewer extends CK.Plugin {
+                init() {
+                    configureArticleImageViewer(this.editor);
+                }
+            }
             function ArticleImages(editor) {
                 editor.plugins.get("FileRepository").createUploadAdapter = (loader) => new UploadAdapter(loader, textarea);
                 editor.plugins.get("ImageUploadEditing").on("uploadComplete", (event, { imageElement, data }) => {
                     if (data.fullUrl) {
-                        editor.model.change((writer) => writer.setAttribute("linkHref", data.fullUrl, imageElement));
+                        editor.model.change((writer) => {
+                            writer.setAttribute("articleFullSize", data.fullUrl, imageElement);
+                            if (imageElement.getAttribute("articleViewer") !== "false") {
+                                writer.setAttribute("articleViewer", "true", imageElement);
+                                writer.setAttribute("linkHref", data.fullUrl, imageElement);
+                            }
+                        });
                     }
                 });
                 editor.ui.componentFactory.add("imageLibrary", (locale) => {
@@ -183,7 +240,7 @@
                     CK.ImageStyle, CK.ImageToolbar, CK.ImageUpload, CK.ImageResize,
                     CK.PendingActions,
                 ],
-                extraPlugins: [ArticleImages],
+                extraPlugins: [ArticleImages, ArticleImageViewer],
                 toolbar: {
                     items: ["undo", "redo", "|", "heading", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "|", "uploadImage", "imageLibrary"],
                     shouldNotGroupWhenFull: true,
@@ -196,7 +253,7 @@
                 image: {
                     upload: { types: textarea.dataset.imageTypes.split(",").filter(Boolean) },
                     styles: { options: ["alignLeft", "block", "alignRight"] },
-                    toolbar: ["imageStyle:alignLeft", "imageStyle:block", "imageStyle:alignRight", "|", "resizeImage", "toggleImageCaption", "imageTextAlternative"],
+                    toolbar: ["imageStyle:alignLeft", "imageStyle:block", "imageStyle:alignRight", "|", "resizeImage", "toggleImageCaption", "imageTextAlternative", "|", "articleImageViewer"],
                     resizeUnit: "%",
                     resizeOptions: [
                         { name: "resizeImage:original", value: null, label: "Исходный размер" },

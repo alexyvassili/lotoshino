@@ -12,6 +12,7 @@
  *
  * Reads .gallery-item links with href/data-src, child img and optional
  * data-caption or data-sub-html (converted to plain text, never executed).
+ * Optional data-download-url points to a larger original; it is not preloaded.
  * Downloads work directly for same-origin images, as in this site's albums.
  * Cross-origin download behavior depends on the remote server/browser.
  */
@@ -138,7 +139,8 @@ export default class PhotoViewer {
             const caption = link.dataset.caption ?? new DOMParser().parseFromString(
                 link.dataset.subHtml || '', 'text/html'
             ).body.textContent;
-            return { link, src, thumb: imageURL(img?.currentSrc || img?.src || src),
+            return { link, src, download: imageURL(link.dataset.downloadUrl) || src,
+                thumb: imageURL(img?.currentSrc || img?.src || src),
                 alt: img?.alt || '', caption: caption.trim() };
         }).filter(item => item.src);
         this.abort = new AbortController();
@@ -352,8 +354,8 @@ export default class PhotoViewer {
         this.counter.textContent = `${this.index + 1} / ${this.items.length}`;
         this.caption.textContent = item.caption || item.alt;
         this.caption.hidden = !this.caption.textContent;
-        this.download.href = item.src;
-        this.download.download = new URL(item.src).pathname.split('/').pop() || `photo-${this.index + 1}.jpg`;
+        this.download.href = item.download;
+        this.download.download = new URL(item.download).pathname.split('/').pop() || `photo-${this.index + 1}.jpg`;
         this.thumbButtons.forEach((button, n) => button.setAttribute('aria-current', String(n === this.index)));
         this.centerThumb();
         const originImage = trigger?.matches?.('img') ? trigger : trigger?.querySelector?.('img');

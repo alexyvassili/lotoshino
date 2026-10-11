@@ -201,7 +201,9 @@ class ImageAdmin(admin.ModelAdmin):
                 file_size = filesizeformat(file.size)
             except OSError:
                 file_size = "Файл недоступен"
-            rows.append((title, width, height, bounds, file_size, file.url, title))
+            rows.append(
+                (title, width, height, bounds, file_size, file.url, title, obj.file.url)
+            )
         return format_html(
             "<table><thead><tr><th>Версия</th><th>Размер</th><th>Ограничение</th>"
             "<th>Объём файла</th><th></th></tr></thead><tbody>{}</tbody></table>",
@@ -209,6 +211,7 @@ class ImageAdmin(admin.ModelAdmin):
                 "",
                 "<tr><td>{}</td><td>{} &times; {} px</td><td>{}</td><td>{}</td>"
                 '<td><a href="{}" class="media-image-preview" data-caption="{}" '
+                'data-download-url="{}" '
                 'aria-haspopup="dialog">Открыть</a></td></tr>',
                 rows,
             ),

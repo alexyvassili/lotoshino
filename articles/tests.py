@@ -8,6 +8,43 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_viewer_setting_belongs_to_each_insertion_and_survives_save(self):
+        preview = "/media/images/" + "a" * 32 + ".jpg"
+        full = "/media/images/" + "b" * 32 + ".jpg"
+        for enabled in ("true", "false"):
+            with self.subTest(enabled=enabled):
+                form = ArticleForm(
+                    data={
+                        "title": f"Viewer {enabled}",
+                        "content": f'<figure class="image"><img data-viewer="{enabled}" data-full-size="{full}" src="{preview}"></figure>',
+                    }
+                )
+                self.assertTrue(form.is_valid(), form.errors)
+                article = form.save()
+                article.refresh_from_db()
+                self.assertIn(f'data-viewer="{enabled}"', article.content)
+                self.assertIn(f'data-full-size="{full}"', article.content)
+                response = self.client.get(article.get_absolute_url())
+                self.assertContains(response, article.content)
+                self.assertContains(
+                    response, 'type="module" src="/static/articles/image_viewer.js"'
+                )
+                self.assertContains(response, 'data-image-base="/media/images/"')
+
+    def test_viewer_metadata_only_allows_known_values_and_library_urls(self):
+        for url in (
+            "javascript:alert(1)",
+            "https://example.com/photo.jpg",
+            "/media/documents/test.pdf",
+        ):
+            with self.subTest(url=url):
+                cleaned = clean_article_html(
+                    f'<img src="/media/images/{"a" * 32}.jpg" data-viewer="anything" data-full-size="{url}" onclick="alert(1)">'
+                )
+                self.assertNotIn("data-viewer", cleaned)
+                self.assertNotIn("data-full-size", cleaned)
+                self.assertNotIn("onclick", cleaned)
+
     def test_preview_and_full_image_link_survive_save_and_display(self):
         preview = "/media/images/" + "a" * 32 + ".jpg"
         full = "/media/images/" + "b" * 32 + ".jpg"

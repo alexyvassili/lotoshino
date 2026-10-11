@@ -1,3 +1,4 @@
+import re
 from html import unescape
 from typing import ClassVar
 
@@ -17,7 +18,9 @@ class ArticleForm(forms.ModelForm):
 
     def clean_content(self):
         content = clean_article_html(self.cleaned_data["content"])
-        if not unescape(strip_tags(content)).strip() and '<img src="' not in content:
+        if not unescape(strip_tags(content)).strip() and not re.search(
+            r'<img\b[^>]*\ssrc="', content
+        ):
             raise forms.ValidationError(
                 "Введите текст статьи или вставьте изображение."
             )

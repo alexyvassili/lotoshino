@@ -20,7 +20,9 @@ def filter_attribute(tag, name, value):
         if match and 1 <= float(match[1]) <= 100:
             return f"width:{match[1]}%;"
         return None
-    if tag == "img" and name == "src":
+    if tag == "img" and name == "data-viewer":
+        return value if value in {"true", "false"} else None
+    if tag == "img" and name in {"src", "data-full-size"}:
         # The editor only inserts images uploaded to our own library.
         prefix = re.escape(settings.MEDIA_URL.rstrip("/") + "/images/")
         return (
@@ -56,7 +58,7 @@ def clean_article_html(value):
         attributes={
             "a": {"href", "title"},
             "figure": {"class", "style"},
-            "img": {"src", "alt", "width", "height"},
+            "img": {"src", "alt", "width", "height", "data-viewer", "data-full-size"},
         },
         attribute_filter=filter_attribute,
         url_schemes={"http", "https", "mailto", "tel"},

@@ -14,6 +14,7 @@ from PIL import Image as PillowImage
 from articles.models import Article
 from site_settings.models import SiteSettings
 
+from .downloads import image_download_urls
 from .models import Image, ImageRendition, ImageSettings
 from .renditions import article_renditions
 from .usage import attach_image_pages
@@ -428,6 +429,43 @@ class ImageEditorTests(TestCase):
         self.assertContains(response, "Статья — превью", count=4)
         self.assertContains(response, "Статья — полная версия")
         self.assertContains(response, "1600 &times; 1200 px")
+
+    def test_viewer_downloads_master_while_displaying_full_rendition(self):
+        response = self.client.post(
+            self.upload_url, {"upload": uploaded_image((3000, 1500))}
+        )
+        image = Image.objects.get(pk=response.json()["id"])
+        preview_url = response.json()["url"]
+        full_url = response.json()["full_url"]
+        self.assertNotEqual(full_url, image.file.url)
+        article = Article.objects.create(
+            title="Display and download",
+            content=f'<a href="{full_url}"><img src="{preview_url}" data-viewer="true"></a>',
+        )
+        response = self.client.get(article.get_absolute_url())
+        self.assertContains(response, f'href="{full_url}"')
+        self.assertEqual(
+            response.context["image_downloads"], {preview_url: image.file.url}
+        )
+        self.assertContains(response, 'id="article-image-downloads"')
+        response = self.client.get(
+            reverse("admin:media_library_image_change", args=[image.pk])
+        )
+        self.assertContains(response, f'data-download-url="{image.file.url}"', count=3)
+
+    def test_downloads_resolve_legacy_sources_and_ignore_unrelated_urls(self):
+        image = Image.objects.create(title="Legacy", file=uploaded_image((1600, 1200)))
+        full = article_renditions(image)["full"]
+        content = f'<img src="{image.file.url}"><img src="{full.file.url}"><img src="https://example.com/test.png">'
+        self.assertEqual(
+            image_download_urls(content),
+            {
+                image.file.url: image.file.url,
+                full.file.url: image.file.url,
+            },
+        )
+        with self.assertNumQueries(0):
+            self.assertEqual(image_download_urls("<p>No images</p>"), {})
 
     def test_replacing_master_creates_new_versions_and_keeps_existing_links(self):
         image = Image.objects.create(title="Replace", file=uploaded_image((1600, 1200)))

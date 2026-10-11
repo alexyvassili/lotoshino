@@ -12,6 +12,11 @@
 {% block maincontent %}
 <article class="article-page">
     <h1 class="mainblock-header">{{ article.title }}</h1>
-    <div class="article-content ck-content">{{ article_content|safe }}</div>
+    <div class="article-content ck-content" data-image-base="{{ image_base }}">{{ article_content|safe }}</div>
 </article>
+{% endblock %}
+
+{% block extra_js %}
+{{ image_downloads|json_script:"article-image-downloads" }}
+<script type="module" src="{% static 'articles/image_viewer.js' %}"></script>
 {% endblock %}
