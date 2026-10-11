@@ -12,6 +12,14 @@ class SiteSettings(TimestampedModel):
         validators=[MinValueValidator(1)],
         help_text="Лимит одного файла любого типа: изображения, документа и других файлов.",
     )
+    allow_image_jpeg = models.BooleanField("JPEG (.jpg, .jpeg)", default=True)
+    allow_image_png = models.BooleanField("PNG (.png)", default=True)
+    allow_image_webp = models.BooleanField("WebP (.webp)", default=True)
+    allow_file_doc = models.BooleanField("DOC (.doc)", default=True)
+    allow_file_docx = models.BooleanField("DOCX (.docx)", default=True)
+    allow_file_odt = models.BooleanField("ODT (.odt)", default=True)
+    allow_file_pdf = models.BooleanField("PDF (.pdf)", default=True)
+    allow_file_rtf = models.BooleanField("RTF (.rtf)", default=True)
 
     class Meta:
         verbose_name = "Настройки"

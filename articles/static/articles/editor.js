@@ -194,7 +194,7 @@
                     { model: "heading3", view: "h3", title: "Заголовок 3", class: "ck-heading_heading3" },
                 ] },
                 image: {
-                    upload: { types: ["jpeg", "png", "webp"] },
+                    upload: { types: textarea.dataset.imageTypes.split(",").filter(Boolean) },
                     styles: { options: ["alignLeft", "block", "alignRight"] },
                     toolbar: ["imageStyle:alignLeft", "imageStyle:block", "imageStyle:alignRight", "|", "resizeImage", "toggleImageCaption", "imageTextAlternative"],
                     resizeUnit: "%",

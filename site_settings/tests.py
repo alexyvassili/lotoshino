@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from django.test import TestCase, override_settings
 from django.urls import path, reverse
@@ -39,6 +40,32 @@ class SiteSettingsAdminTests(TestCase):
         self.assertContains(response, 'name="max_upload_size_mb"')
         self.assertNotContains(response, 'name="max_image_width"')
         self.assertNotContains(response, 'name="_addanother"')
+        self.assertContains(response, "Разрешённые форматы изображений")
+        self.assertContains(response, "Разрешённые форматы файлов")
+        for name in (
+            "allow_image_jpeg",
+            "allow_image_png",
+            "allow_image_webp",
+            "allow_file_doc",
+            "allow_file_docx",
+            "allow_file_odt",
+            "allow_file_pdf",
+            "allow_file_rtf",
+        ):
+            self.assertContains(response, f'name="{name}"')
+            self.assertTrue(getattr(SiteSettings.load(), name))
+
+    def test_format_switches_save_independently(self):
+        data = model_to_dict(SiteSettings.load())
+        data.pop("allow_image_png")
+        data.pop("allow_file_doc")
+        self.assertEqual(self.client.post(self.change_url, data).status_code, 302)
+        settings = SiteSettings.load()
+        self.assertFalse(settings.allow_image_png)
+        self.assertFalse(settings.allow_file_doc)
+        self.assertTrue(settings.allow_image_jpeg)
+        self.assertTrue(settings.allow_image_webp)
+        self.assertTrue(settings.allow_file_pdf)
 
     def test_setting_can_be_changed_and_zero_is_rejected(self):
         response = self.client.post(self.change_url, {"max_upload_size_mb": 20})

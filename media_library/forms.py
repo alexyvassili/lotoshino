@@ -3,6 +3,7 @@ from django.core.files.uploadedfile import UploadedFile
 from PIL import Image as PillowImage
 from PIL import ImageOps, UnidentifiedImageError
 
+from site_settings.formats import IMAGE_FORMATS, allowed_extensions, validate_format
 from site_settings.uploads import validate_upload_size
 
 from .models import Image, ImageSettings
@@ -10,6 +11,12 @@ from .processing import encode_image
 
 
 class ImageForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["file"].widget.attrs["accept"] = ",".join(
+            allowed_extensions(IMAGE_FORMATS)
+        )
+
     class Meta:
         model = Image
         fields = ("title", "file", "alt_text")
@@ -22,10 +29,7 @@ class ImageForm(forms.ModelForm):
         try:
             upload.seek(0)
             with PillowImage.open(upload) as image:
-                if image.format not in {"JPEG", "PNG", "WEBP"}:
-                    raise forms.ValidationError(
-                        "Выберите изображение JPEG, PNG или WebP."
-                    )
+                validate_format(upload.name, image.format, IMAGE_FORMATS)
                 if image.width * image.height > 25_000_000:
                     raise forms.ValidationError(
                         "Максимальное разрешение — 25 мегапикселей."

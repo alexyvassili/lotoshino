@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    "document_library.apps.DocumentLibraryConfig",
     "site_settings.apps.SiteSettingsConfig",
     "media_library.apps.MediaLibraryConfig",
     "articles.apps.ArticlesConfig",

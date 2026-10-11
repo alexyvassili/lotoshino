@@ -68,6 +68,79 @@ class ImageEditorTests(TestCase):
         self.assertEqual(self.client.post(self.upload_url).status_code, 400)
         self.assertFalse(Image.objects.exists())
 
+    def test_image_formats_match_contents_and_obey_individual_switches(self):
+        for file_format, extension, field in (
+            ("JPEG", "jpeg", "allow_image_jpeg"),
+            ("PNG", "png", "allow_image_png"),
+            ("WEBP", "webp", "allow_image_webp"),
+        ):
+            with self.subTest(file_format=file_format):
+                data = BytesIO()
+                PillowImage.new("RGB", (80, 60), "green").save(data, file_format)
+
+                def upload(name, data=data):
+                    return SimpleUploadedFile(
+                        name, data.getvalue(), "application/octet-stream"
+                    )
+
+                response = self.client.post(
+                    self.upload_url, {"upload": upload(f"test.{extension.upper()}")}
+                )
+                self.assertEqual(response.status_code, 201)
+                other_extension = "png" if extension != "png" else "jpg"
+                response = self.client.post(
+                    self.upload_url, {"upload": upload(f"wrong.{other_extension}")}
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(
+                    "не соответствует содержимому", response.json()["error"]["message"]
+                )
+                settings = SiteSettings.load()
+                setattr(settings, field, False)
+                settings.save()
+                count = Image.objects.count()
+                response = self.client.post(
+                    self.upload_url, {"upload": upload(f"disabled.{extension}")}
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(
+                    "отключена в настройках сайта", response.json()["error"]["message"]
+                )
+                response = self.client.post(
+                    reverse("admin:media_library_image_add"),
+                    {"title": "Disabled", "file": upload(f"disabled.{extension}")},
+                )
+                self.assertContains(response, "отключена в настройках сайта")
+                self.assertEqual(Image.objects.count(), count)
+
+    def test_renamed_executable_and_unsupported_image_are_rejected(self):
+        data = BytesIO()
+        PillowImage.new("RGB", (80, 60), "green").save(data, "GIF")
+        for content in (b"MZ" + bytes(2048), data.getvalue()):
+            response = self.client.post(
+                self.upload_url,
+                {"upload": SimpleUploadedFile("fake.png", content, "image/png")},
+            )
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(Image.objects.exists())
+
+    def test_format_settings_affect_picker_but_keep_existing_images_editable(self):
+        image = Image.objects.create(title="Existing", file=uploaded_image())
+        settings = SiteSettings.load()
+        settings.allow_image_png = False
+        settings.save()
+        response = self.client.get(reverse("admin:articles_article_add"))
+        self.assertContains(response, 'data-image-types="jpeg,webp"')
+        response = self.client.post(
+            reverse("admin:media_library_image_change", args=[image.pk]),
+            {"title": "Renamed", "alt_text": ""},
+        )
+        self.assertEqual(response.status_code, 302)
+        settings.allow_image_jpeg = settings.allow_image_webp = False
+        settings.save()
+        response = self.client.post(self.upload_url, {"upload": uploaded_image()})
+        self.assertEqual(response.status_code, 400)
+
     def test_maximum_dimensions_apply_to_editor_and_library_uploads(self):
         settings = ImageSettings.load()
         settings.max_image_width = 2048

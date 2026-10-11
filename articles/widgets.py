@@ -3,6 +3,8 @@ from typing import ClassVar
 from django import forms
 from django.urls import reverse
 
+from site_settings.formats import IMAGE_FORMATS, allowed_extensions
+
 
 class ArticleEditorWidget(forms.Textarea):
     template_name = "articles/widgets/editor.html"
@@ -14,6 +16,11 @@ class ArticleEditorWidget(forms.Textarea):
                 "data-article-editor": "true",
                 "data-upload-url": reverse("admin:article_image_upload"),
                 "data-library-url": reverse("admin:article_image_library"),
+                "data-image-types": ",".join(
+                    extension.lstrip(".").replace("jpg", "jpeg")
+                    for extension in allowed_extensions(IMAGE_FORMATS)
+                    if extension != ".jpeg"
+                ),
             }
         )
         return context
