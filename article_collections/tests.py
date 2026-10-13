@@ -194,22 +194,20 @@ class CollectionTests(TestCase):
 
     def test_new_layout_files_are_available_for_selection(self):
         with TemporaryDirectory() as directory:
-            Path(directory, "history.html").write_text("Custom template")
+            Path(directory, "custom.html").write_text("Custom template")
             Path(directory, "notes.txt").write_text("Not a template")
             with patch("article_collections.layouts.LAYOUT_DIRECTORY", Path(directory)):
                 self.assertEqual(
                     collection_template_choices(),
                     [
                         (DEFAULT_TEMPLATE, "Стандартный — изображение и аннотация"),
-                        ("article_collections/layouts/history.html", "history"),
+                        ("article_collections/layouts/custom.html", "custom"),
                     ],
                 )
                 response = self.client.get(
                     reverse("admin:article_collections_collection_add")
                 )
-                self.assertContains(
-                    response, "article_collections/layouts/history.html"
-                )
+                self.assertContains(response, "article_collections/layouts/custom.html")
 
     def test_renaming_preserves_url_and_clearing_regenerates(self):
         collection = Collection.objects.create(title="История благочиния")

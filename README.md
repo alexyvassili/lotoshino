@@ -259,6 +259,11 @@ Pillow распознаёт и декодирует изображения; olef
 `article_collections/templates/article_collections/detail.html`.
 Также доступен компактный текстовый список без изображений —
 `article_collections/templates/article_collections/layouts/compact.html`.
+Вариант «История благочиния — карточки как во Flask» находится в
+`article_collections/templates/article_collections/layouts/history.html`:
+название, изображение слева с обтеканием аннотацией и выделенная ссылка на статью.
+Разметка перенесена из Flask без текстов и изображений старой страницы;
+содержимое берётся из карточек выбранной подборки.
 
 Для нового варианта добавьте `.html` в
 `article_collections/templates/article_collections/layouts/`: файл автоматически

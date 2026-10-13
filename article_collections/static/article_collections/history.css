@@ -1,0 +1,8 @@
+/* The original history-card styles are already in css/lotoshino.css. */
+.history-collection { overflow-wrap: anywhere; }
+.history-collection .collection-introduction { margin-bottom: 1.5rem; }
+.history-collection .history-card-img { max-width: 100%; height: auto; }
+
+@media (max-width: 640px) {
+    .history-collection .history-card-img { float: none; display: block; margin: 0 0 0.8rem; }
+}
