@@ -3,13 +3,13 @@ from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import resolve, reverse
 
 from .debug_toolbar import show_toolbar
 
 
-class AsyncIndexTests(SimpleTestCase):
+class AsyncIndexTests(TestCase):
     async def test_home_uses_async_view(self):
         self.assertTrue(iscoroutinefunction(resolve("/").func))
         response = await self.async_client.get("/")

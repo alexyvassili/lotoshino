@@ -5,6 +5,8 @@ from django.urls import Resolver404, resolve, reverse
 from articles.slugs import article_slug_base, available_slug
 from lotoshino.models import TimestampedModel
 
+from .layouts import DEFAULT_TEMPLATE, collection_template_choices
+
 
 class Collection(TimestampedModel):
     title = models.CharField("Название", max_length=255)
@@ -21,6 +23,17 @@ class Collection(TimestampedModel):
     )
     introduction = models.TextField("Вступительный текст", blank=True)
     is_published = models.BooleanField("Опубликовано", default=True)
+    template_name = models.CharField(
+        "Шаблон",
+        max_length=255,
+        choices=collection_template_choices,
+        default=DEFAULT_TEMPLATE,
+        help_text=(
+            "Выбирается только при создании подборки. После сохранения можно "
+            "редактировать сам файл шаблона; правки применятся ко всем "
+            "подборкам, использующим этот файл."
+        ),
+    )
 
     class Meta:
         verbose_name = "Подборка статей"
@@ -45,6 +58,7 @@ class Collection(TimestampedModel):
 
     def clean(self):
         super().clean()
+        self._validate_template()
         if self.slug and self.is_reserved_slug(self.slug):
             raise ValidationError(
                 {
@@ -52,9 +66,35 @@ class Collection(TimestampedModel):
                 }
             )
 
+    def _validate_template(self, using=None):
+        using = (
+            using or self._state.db or router.db_for_write(type(self), instance=self)
+        )
+        if not self._state.adding:
+            original = (
+                type(self)
+                .objects.using(using)
+                .filter(pk=self.pk)
+                .values_list("template_name", flat=True)
+                .first()
+            )
+            if original is not None and self.template_name != original:
+                raise ValidationError(
+                    {"template_name": "Шаблон нельзя изменить после создания подборки."}
+                )
+        elif self.template_name not in dict(collection_template_choices()):
+            raise ValidationError(
+                {"template_name": "Выберите доступный шаблон подборки."}
+            )
+
     def save(self, **kwargs):
         if kwargs.get("update_fields") is not None and not kwargs["update_fields"]:
             return super().save(**kwargs)
+        if (
+            kwargs.get("update_fields") is None
+            or "template_name" in kwargs["update_fields"]
+        ):
+            self._validate_template(using=kwargs.get("using"))
         if self.slug:
             return super().save(**kwargs)
 
@@ -107,8 +147,8 @@ class CollectionItem(models.Model):
     position = models.PositiveIntegerField("Порядок", default=0)
 
     class Meta:
-        verbose_name = "Статья подборки"
-        verbose_name_plural = "Статьи подборки"
+        verbose_name = "Карточка статьи в подборке"
+        verbose_name_plural = "Карточки статей в подборке"
         ordering = ("position", "pk")
         constraints = [
             models.UniqueConstraint(

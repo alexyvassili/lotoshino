@@ -1,0 +1,6 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+
+{% block content %}
+  {% include "admin/article_collections/collection/deletion_notice.html" %}
+  {{ block.super }}
+{% endblock %}

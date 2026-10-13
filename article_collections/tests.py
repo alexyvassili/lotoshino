@@ -1,4 +1,6 @@
+from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -16,6 +18,7 @@ from site_settings.models import SiteSettings
 
 from .forms import CollectionItemForm
 from .images import article_images
+from .layouts import DEFAULT_TEMPLATE, collection_template_choices
 from .models import Collection, CollectionItem
 
 
@@ -93,6 +96,7 @@ class CollectionTests(TestCase):
             {
                 "title": "История благочиния",
                 "slug": "",
+                "template_name": DEFAULT_TEMPLATE,
                 "is_published": "on",
                 "items-TOTAL_FORMS": "0",
                 "items-INITIAL_FORMS": "0",
@@ -121,6 +125,91 @@ class CollectionTests(TestCase):
                 first.full_clean()
                 second.full_clean()
         self.assertTrue(Collection.objects.filter(slug="admin-2").exists())
+
+    def test_template_selection_on_creation_and_readonly_after_save(self):
+        add_url = reverse("admin:article_collections_collection_add")
+        self.assertContains(self.client.get(add_url), 'name="template_name"')
+        compact = "article_collections/layouts/compact.html"
+        data = {
+            "title": "Compact collection",
+            "slug": "compact-test",
+            "template_name": compact,
+            "is_published": "on",
+            "items-TOTAL_FORMS": "0",
+            "items-INITIAL_FORMS": "0",
+            "items-MIN_NUM_FORMS": "0",
+            "items-MAX_NUM_FORMS": "1000",
+        }
+        self.assertEqual(self.client.post(add_url, data).status_code, 302)
+        collection = Collection.objects.get(slug="compact-test")
+        self.assertEqual(collection.template_name, compact)
+        change_url = reverse(
+            "admin:article_collections_collection_change", args=[collection.pk]
+        )
+        response = self.client.get(change_url)
+        self.assertContains(response, compact)
+        self.assertNotContains(response, 'name="template_name"')
+        # A forged POST must not change the immutable template either.
+        data.update(title="Renamed", template_name=DEFAULT_TEMPLATE)
+        self.assertEqual(self.client.post(change_url, data).status_code, 302)
+        collection.refresh_from_db()
+        self.assertEqual(collection.title, "Renamed")
+        self.assertEqual(collection.template_name, compact)
+        self.assertContains(
+            self.client.get(reverse("admin:article_collections_collection_changelist")),
+            compact,
+        )
+
+    def test_templates_render_same_content_with_different_layouts(self):
+        self.item()
+        compact = Collection.objects.create(
+            title="Compact", template_name="article_collections/layouts/compact.html"
+        )
+        CollectionItem.objects.create(
+            collection=compact, article=self.article, annotation="Shared article"
+        )
+        draft = Article.objects.create(title="Secret article", is_published=False)
+        CollectionItem.objects.create(collection=compact, article=draft, annotation="")
+        response = self.client.get(self.collection.get_absolute_url())
+        self.assertTemplateUsed(response, DEFAULT_TEMPLATE)
+        self.assertContains(response, 'class="collection-entry"')
+        response = self.client.get(compact.get_absolute_url())
+        self.assertTemplateUsed(response, compact.template_name)
+        self.assertContains(response, 'class="collection-compact-list"')
+        self.assertContains(response, self.article.get_absolute_url())
+        self.assertContains(response, "Shared article")
+        self.assertNotContains(response, "Secret article")
+
+    def test_model_rejects_template_changes_and_arbitrary_template_paths(self):
+        self.collection.template_name = "article_collections/layouts/compact.html"
+        with self.assertRaisesMessage(ValidationError, "Шаблон нельзя изменить"):
+            self.collection.full_clean()
+        with self.assertRaisesMessage(ValidationError, "Шаблон нельзя изменить"):
+            self.collection.save(update_fields=["template_name"])
+        self.collection.refresh_from_db()
+        self.assertEqual(self.collection.template_name, DEFAULT_TEMPLATE)
+        for path in ("admin/base.html", "../detail.html", "/tmp/template.html"):
+            with self.subTest(path=path), self.assertRaises(ValidationError):
+                Collection.objects.create(title="Invalid", template_name=path)
+
+    def test_new_layout_files_are_available_for_selection(self):
+        with TemporaryDirectory() as directory:
+            Path(directory, "history.html").write_text("Custom template")
+            Path(directory, "notes.txt").write_text("Not a template")
+            with patch("article_collections.layouts.LAYOUT_DIRECTORY", Path(directory)):
+                self.assertEqual(
+                    collection_template_choices(),
+                    [
+                        (DEFAULT_TEMPLATE, "Стандартный — изображение и аннотация"),
+                        ("article_collections/layouts/history.html", "history"),
+                    ],
+                )
+                response = self.client.get(
+                    reverse("admin:article_collections_collection_add")
+                )
+                self.assertContains(
+                    response, "article_collections/layouts/history.html"
+                )
 
     def test_renaming_preserves_url_and_clearing_regenerates(self):
         collection = Collection.objects.create(title="История благочиния")
@@ -154,6 +243,55 @@ class CollectionTests(TestCase):
         self.assertFalse(CollectionItemForm(data).is_valid())
         self.collection.delete()
         self.assertTrue(Article.objects.filter(pk=self.article.pk).exists())
+
+    def test_admin_deletion_preserves_articles_images_and_other_collections(self):
+        image = Image.objects.create(title="Cover", file="images/cover.png")
+        other_item = self.item(image=image)
+        original_content = self.article.content
+        for bulk in (False, True):
+            with self.subTest(bulk=bulk):
+                collection = Collection.objects.create(title="To delete")
+                item = CollectionItem.objects.create(
+                    collection=collection,
+                    article=self.article,
+                    image=image,
+                    annotation="Only this card is deleted",
+                )
+                if bulk:
+                    url = reverse("admin:article_collections_collection_changelist")
+                    data = {
+                        "action": "delete_selected",
+                        "_selected_action": [collection.pk],
+                    }
+                    confirmation = self.client.post(url, data)
+                else:
+                    url = reverse(
+                        "admin:article_collections_collection_delete",
+                        args=[collection.pk],
+                    )
+                    data = {}
+                    confirmation = self.client.get(url)
+                self.assertContains(
+                    confirmation, "Сами статьи и изображения останутся на сайте."
+                )
+                self.assertContains(confirmation, "Карточки статей в подборке")
+                self.assertNotContains(confirmation, "Статьи подборки:")
+                response = self.client.post(url, {**data, "post": "yes"})
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(Collection.objects.filter(pk=collection.pk).exists())
+                self.assertFalse(CollectionItem.objects.filter(pk=item.pk).exists())
+                self.article.refresh_from_db()
+                self.assertEqual(self.article.content, original_content)
+                self.assertEqual(
+                    self.client.get(self.article.get_absolute_url()).status_code, 200
+                )
+                self.assertTrue(Image.objects.filter(pk=image.pk).exists())
+                self.assertTrue(
+                    CollectionItem.objects.filter(pk=other_item.pk).exists()
+                )
+                self.assertTrue(
+                    Collection.objects.filter(pk=self.collection.pk).exists()
+                )
 
     def test_picker_only_embedded_images_and_search(self):
         embedded = self.client.post(self.upload, {"upload": uploaded_image()}).json()
@@ -235,6 +373,7 @@ class CollectionTests(TestCase):
         payload = {
             "title": "New collection",
             "slug": "new",
+            "template_name": DEFAULT_TEMPLATE,
             "is_published": "on",
             "items-TOTAL_FORMS": "2",
             "items-INITIAL_FORMS": "0",

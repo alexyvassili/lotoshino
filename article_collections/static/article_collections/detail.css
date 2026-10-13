@@ -8,6 +8,9 @@
 .collection-entry-image img { display: block; max-width: 100%; height: auto; }
 .page-main-content-col .article-collection p { text-align: left; }
 .collection-read-more { margin-bottom: 0; }
+.collection-compact-list { list-style: none; padding: 0; margin: 0; }
+.collection-compact-list > li { padding: 0.8rem 0; border-bottom: 1px solid #ddd; }
+.collection-compact-list h2 { margin: 0 0 0.5rem; font-size: 18px; line-height: 1.4; }
 @media (max-width: 640px) {
     .collection-entry-image { float: none; display: block; max-width: 100%; margin: 0 0 1rem; }
 }

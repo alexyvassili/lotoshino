@@ -1,0 +1,25 @@
+.menu-order { background: var(--darkened-bg); padding: 12px 16px; margin-bottom: 20px; border: 1px solid var(--hairline-color); }
+.menu-order-list { margin: 0; padding-left: 24px; }
+.menu-order-list li { padding: 7px 0; border-bottom: 1px solid var(--hairline-color); }
+.menu-order-list li:last-child { border: 0; }
+.menu-order-controls { display: inline-flex; gap: 6px; margin-left: 15px; }
+.menu-order-controls button { padding: 5px 9px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--body-bg); color: var(--link-fg); cursor: pointer; }
+.menu-order-controls button:disabled { opacity: 0.45; cursor: default; }
+.menu-item-hidden > a { color: var(--body-quiet-color); text-decoration: line-through; }
+.menu-order-empty { list-style: none; }
+#items-group .inline-related:not(.empty-form) { border: 1px solid var(--border-color); border-top: 4px solid var(--primary); border-radius: 4px; margin-bottom: 20px; scroll-margin-top: 20px; }
+#items-group .inline-related > h3 { padding: 12px; background: var(--darkened-bg); }
+#items-group .inline-related > h3:focus { outline: 2px solid var(--link-fg); }
+#items-group .form-row { padding: 8px 12px; }
+#items-group .form-row > .flex-container:not(.hidden) { display: grid; grid-template-columns: 155px minmax(0, 1fr); align-items: start; gap: 5px 12px; }
+#items-group .form-row label { grid-column: 1; grid-row: 1; width: auto; padding: 7px 0 0; margin: 0; }
+#items-group .form-row input[type=text], #items-group .form-row select { grid-column: 2; grid-row: 1; width: 100%; max-width: 850px; min-width: 0; box-sizing: border-box; }
+#items-group .form-row .help { grid-column: 2; grid-row: 2; margin: 0; padding: 0; font-size: 12px; }
+#items-group .form-row .errorlist { grid-column: 2; grid-row: 3; margin: 0; padding: 0; }
+#items-group .form-row .checkbox { grid-column: 2; }
+#items-group .form-row .checkbox label { padding: 0; }
+@media (max-width: 767px) {
+    #items-group .form-row > .flex-container:not(.hidden) { grid-template-columns: minmax(0, 1fr); }
+    #items-group .form-row > .flex-container > * { grid-column: 1 !important; grid-row: auto !important; }
+    .menu-order-controls { display: flex; margin: 8px 0 0; }
+}

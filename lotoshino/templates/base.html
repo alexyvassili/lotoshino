@@ -1,4 +1,5 @@
-{% load static %}
+{% load static navigation_tags %}
+{% site_menus as menus %}
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -21,6 +22,21 @@
     <body class="{% block body_class %}{% endblock %}">
 
 <header id="main" >
+  {% if menus.top %}
+  <div class="navbar-top">
+    <nav class="navbar navbar-expand-lg" aria-label="Верхнее меню">
+      <div class="container-fluid">
+        <ul class="navbar-nav col-md-6 offset-md-3">
+          {% for item in menus.top %}
+          <li class="nav-item">
+            <a class="nav-link navbar-top-link" href="{{ item.url }}"{% if item.is_current %} aria-current="page"{% endif %}>{{ item.title }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </nav>
+  </div>
+  {% endif %}
 
   <div class="container">
     <div class="row header-row">

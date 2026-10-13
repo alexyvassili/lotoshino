@@ -107,6 +107,6 @@ def detail(request, slug):
             item.preview = previews[item.image_id]
     return render(
         request,
-        "article_collections/detail.html",
+        collection.template_name,
         {"collection": collection, "items": items},
     )

@@ -2,6 +2,7 @@ from typing import ClassVar
 
 from django.contrib import admin
 from django.urls import path
+from django.utils.html import format_html
 
 from . import views
 from .forms import CollectionItemForm
@@ -10,6 +11,8 @@ from .models import Collection, CollectionItem
 
 class CollectionItemInline(admin.StackedInline):
     model = CollectionItem
+    verbose_name = "Статья подборки"
+    verbose_name_plural = "Статьи подборки"
     form = CollectionItemForm
     autocomplete_fields = ("article",)
     fields = (
@@ -46,11 +49,26 @@ class CollectionItemInline(admin.StackedInline):
 
 @admin.register(Collection)
 class CollectionAdmin(admin.ModelAdmin):
-    fields = ("title", "slug", "introduction", "is_published")
-    list_display = ("title", "slug", "is_published", "updated_at")
+    fields = ("title", "slug", "template_name", "introduction", "is_published")
+    list_display = ("title", "slug", "template_display", "is_published", "updated_at")
     list_filter = ("is_published",)
     search_fields = ("title", "slug", "introduction")
     inlines = (CollectionItemInline,)
+
+    def get_fields(self, request, obj=None):
+        return tuple(
+            "template_display" if obj and field == "template_name" else field
+            for field in self.fields
+        )
+
+    def get_readonly_fields(self, request, obj=None):
+        return ("template_display",) if obj else ()
+
+    @admin.display(description="Шаблон")
+    def template_display(self, obj):
+        return format_html(
+            "{}<br><code>{}</code>", obj.get_template_name_display(), obj.template_name
+        )
 
     class Media:
         css: ClassVar = {

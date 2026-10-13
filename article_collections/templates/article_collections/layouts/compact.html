@@ -1,0 +1,13 @@
+{% extends "article_collections/detail.html" %}
+
+{% block collection_items %}
+<ul class="collection-compact-list">
+    {% for item in items %}
+    <li>
+        <h2><a href="{{ item.article.get_absolute_url }}">{{ item.title }}</a></h2>
+        <div class="collection-annotation">{{ item.annotation|linebreaks }}</div>
+        <p class="collection-read-more"><a href="{{ item.article.get_absolute_url }}">{{ item.link_text }}</a></p>
+    </li>
+    {% empty %}<li>Статьи скоро появятся.</li>{% endfor %}
+</ul>
+{% endblock %}

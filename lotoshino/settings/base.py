@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "articles.apps.ArticlesConfig",
     "article_collections.apps.ArticleCollectionsConfig",
     "home.apps.HomeConfig",
+    "navigation.apps.NavigationConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

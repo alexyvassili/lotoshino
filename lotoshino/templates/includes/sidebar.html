@@ -1,10 +1,17 @@
-{% if request.resolver_match.view_name != 'index' %}
+{% if menus.main or request.resolver_match.view_name != 'index' %}
 <nav class="navbar main-navbar-nav" aria-label="Основная навигация">
   <div class="container-fluid">
     <ul id="main-navbar-ul" class="navbar-nav">
+      {% if request.resolver_match.view_name != 'index' %}
       <li class="nav-item main-nav-item">
         <a class="nav-link main-nav-link" href="{% url 'index' %}">Главная страница</a>
       </li>
+      {% endif %}
+      {% for item in menus.main %}
+      <li class="nav-item main-nav-item{% if item.is_current %} active{% endif %}">
+        <a class="nav-link main-nav-link" href="{{ item.url }}"{% if item.is_current %} aria-current="page"{% endif %}>{{ item.title }}</a>
+      </li>
+      {% endfor %}
     </ul>
   </div>
 </nav>
