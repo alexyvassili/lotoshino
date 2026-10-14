@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,6 +8,8 @@ from django.db import models
 
 from lotoshino.models import TimestampedModel
 
+from .storage import image_storage
+
 
 def image_upload_path(instance, filename):
     return f"images/{uuid4()}{Path(filename).suffix.lower()}"
@@ -14,7 +17,9 @@ def image_upload_path(instance, filename):
 
 def rendition_upload_path(instance, filename):
     source = Path(instance.source_name)
-    return f"images/{source.stem}_{instance.width}x{instance.height}{Path(filename).suffix.lower()}"
+    # An imported thumbnail may itself be the only available master.
+    stem = re.sub(r"_\d+x\d+(?:_[A-Za-z0-9]{7})?$", "", source.stem)
+    return f"images/{stem}_{instance.width}x{instance.height}{Path(filename).suffix.lower()}"
 
 
 def dimension_field(label, default):
@@ -94,7 +99,9 @@ class ImageSettings(TimestampedModel):
 
 class Image(TimestampedModel):
     title = models.CharField("Название", max_length=255)
-    file = models.ImageField("Изображение", upload_to=image_upload_path)
+    file = models.ImageField(
+        "Изображение", upload_to=image_upload_path, storage=image_storage
+    )
     alt_text = models.CharField("Описание для доступности", max_length=255, blank=True)
 
     class Meta:
@@ -121,7 +128,7 @@ class ImageRendition(TimestampedModel):
     max_height = models.PositiveSmallIntegerField()
     width = models.PositiveSmallIntegerField()
     height = models.PositiveSmallIntegerField()
-    file = models.ImageField(upload_to=rendition_upload_path)
+    file = models.ImageField(upload_to=rendition_upload_path, storage=image_storage)
 
     class Meta:
         constraints = [

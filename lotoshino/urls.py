@@ -5,10 +5,16 @@ from django.urls import include, path
 
 from article_collections.views import detail as collection_detail
 from document_library.views import download
+from media_library.serving import image_file
 
 from .views import favicon, index
 
 urlpatterns = [
+    path(
+        f"{settings.MEDIA_URL.lstrip('/')}images/<path:filename>",
+        image_file,
+        name="image_file",
+    ),
     path("documents/<int:pk>/download/", download, name="document_download"),
     path("", index, name="index"),
     path("favicon.ico", favicon, name="favicon"),
