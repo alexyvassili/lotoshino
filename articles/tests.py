@@ -8,6 +8,36 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_imported_tables_and_anchor_targets_survive_sanitization(self):
+        content = '<p id="drupal-1">Section</p><p id="unsafe">Text</p><a href="#drupal-1">Jump</a><figure class="table"><table><tbody><tr><td colspan="2" onclick="bad()">Cell</td></tr></tbody></table></figure>'
+        article = Article.objects.create(title="Table", content=content)
+        self.assertIn('id="drupal-1"', article.content)
+        self.assertNotIn('id="unsafe"', article.content)
+        self.assertNotIn("onclick", article.content)
+        self.assertIn('<td colspan="2">Cell</td>', article.content)
+        self.assertContains(
+            self.client.get(article.get_absolute_url()), '<figure class="table">'
+        )
+
+    def test_table_border_controls_survive_sanitization(self):
+        for style in (
+            "border:1px none #c9b98f;",
+            "border:1px solid #2255aa;",
+            "border-style:none;",
+            "border-color:#2255aa;border-style:solid;border-width:1px;",
+        ):
+            with self.subTest(style=style):
+                html = f'<figure class="table"><table style="{style}"><tbody><tr><td style="{style}">Cell</td></tr></tbody></table></figure>'
+                article = Article.objects.create(title="Borders", content=html)
+                self.assertEqual(article.content.count(f'style="{style}"'), 2)
+                self.assertEqual(clean_article_html(article.content), article.content)
+        cleaned = clean_article_html(
+            '<table style="background:url(https://evil.test/x);position:fixed;border-width:999px;border-color:expression(x);"><tbody><tr><td style="border:1px solid #2255aa;position:fixed;" colspan="10000">Cell</td></tr></tbody></table>'
+        )
+        self.assertIn('style="border:1px solid #2255aa;"', cleaned)
+        for forbidden in ("evil.test", "fixed", "999px", "expression", "10000"):
+            self.assertNotIn(forbidden, cleaned)
+
     def test_annotation_survives_save_and_render_without_arbitrary_classes(self):
         form = ArticleForm(
             data={

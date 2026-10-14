@@ -31,3 +31,9 @@
 .article-image-grid button { background: var(--body-bg); color: var(--body-fg); border: 1px solid var(--hairline-color); border-radius: 4px; }
 .article-image-grid img { width: 100%; height: 110px; object-fit: contain; }
 .article-image-grid span { display: block; overflow-wrap: anywhere; }
+.article-document-library label { display: block; float: none; width: auto; margin: 16px 0; }
+.article-document-library label input { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; }
+.article-document-list { display: grid; gap: 4px; max-height: 30vh; overflow-y: auto; }
+.article-document-list button { text-align: left; overflow-wrap: anywhere; }
+.article-document-list button[aria-pressed="true"] { outline: 2px solid var(--link-fg); }
+.article-table-borders label { display: block; float: none; width: auto; margin: 16px 0; }

@@ -1,4 +1,21 @@
 /* Shared by the editor and article templates using class="article-content ck-content". */
+:is(.article-content, .ck-content) a.document-link::before {
+    content: "";
+    display: inline-block;
+    width: 26px;
+    height: 28px;
+    margin-right: 8px;
+    vertical-align: middle;
+    background: url("document-icons/document.png") center / 20px auto no-repeat;
+}
+:is(.article-content, .ck-content) a.document-link[data-document-format="PDF"]::before {
+    background-image: url("document-icons/pdf.gif");
+    background-size: contain;
+}
+.article-content figure.table { margin: 1em 0; overflow-x: auto; }
+.article-content table { border-collapse: collapse; width: 100%; }
+.article-content :is(td, th) { border: 1px solid #c9b98f; padding: 8px; vertical-align: top; }
+.article-content :is(td, th) p { text-indent: 0; }
 :is(.article-content, .ck-content) p.article-annotation {
     border-left: 3px solid #c9b98f;
     padding-left: 18px;

@@ -320,6 +320,69 @@
                     button.on("execute", () => openLibrary(editor, textarea));
                     return button;
                 });
+                editor.ui.componentFactory.add("documentLibrary", (locale) => {
+                    const button = new CK.ButtonView(locale);
+                    button.set({ label: "Документ", withText: true, tooltip: true });
+                    button.bind("isEnabled").to(editor.commands.get("link"), "isEnabled");
+                    button.on("execute", () => window.openArticleDocumentLibrary(editor, textarea));
+                    return button;
+                });
+                editor.ui.componentFactory.add("tableBorders", (locale) => {
+                    const button = new CK.ButtonView(locale);
+                    button.set({ label: "Границы", withText: true, tooltip: true });
+                    button.bind("isEnabled").to(editor.commands.get("tableBorderStyle"), "isEnabled");
+                    button.on("execute", () => {
+                        const selection = editor.model.document.selection;
+                        const selected = selection.getSelectedElement();
+                        const table = selected?.is("element", "table") ? selected : selection.getFirstPosition()?.findAncestor("table");
+                        if (!table) return;
+                        const dialog = document.createElement("dialog");
+                        dialog.className = "article-image-library article-table-borders";
+                        dialog.setAttribute("aria-label", "Границы таблицы");
+                        const heading = document.createElement("h2");
+                        heading.textContent = "Границы таблицы";
+                        const label = document.createElement("label");
+                        const visible = document.createElement("input");
+                        visible.type = "checkbox";
+                        visible.checked = table.getAttribute("tableBorderStyle") !== "none";
+                        label.append(visible, " Показывать границы");
+                        const colorLabel = document.createElement("label");
+                        colorLabel.textContent = "Цвет границ ";
+                        const color = document.createElement("input");
+                        color.type = "color";
+                        color.value = table.getAttribute("tableBorderColor") || "#c9b98f";
+                        color.disabled = !visible.checked;
+                        colorLabel.append(color);
+                        visible.addEventListener("change", () => { color.disabled = !visible.checked; });
+                        const apply = document.createElement("button");
+                        apply.type = "button";
+                        apply.textContent = "Применить";
+                        apply.addEventListener("click", () => {
+                            editor.model.change(writer => {
+                                const set = (element, prefix) => {
+                                    writer.setAttribute(`${prefix}BorderStyle`, visible.checked ? "solid" : "none", element);
+                                    writer.setAttribute(`${prefix}BorderColor`, color.value, element);
+                                    writer.setAttribute(`${prefix}BorderWidth`, "1px", element);
+                                };
+                                set(table, "table");
+                                for (const row of table.getChildren()) {
+                                    if (!row.is("element", "tableRow")) continue;
+                                    for (const cell of row.getChildren()) set(cell, "tableCell");
+                                }
+                            });
+                            dialog.close();
+                        });
+                        const cancel = document.createElement("button");
+                        cancel.type = "button";
+                        cancel.textContent = "Отмена";
+                        cancel.addEventListener("click", () => dialog.close());
+                        dialog.addEventListener("close", () => { dialog.remove(); editor.editing.view.focus(); });
+                        dialog.append(heading, label, colorLabel, apply, cancel);
+                        document.body.append(dialog);
+                        dialog.showModal();
+                    });
+                    return button;
+                });
             }
             const editor = await CK.ClassicEditor.create(textarea, {
                 licenseKey: "GPL",
@@ -329,8 +392,14 @@
                     CK.Link, CK.LinkImage, CK.List, CK.BlockQuote, CK.ImageBlock, CK.ImageCaption,
                     CK.ImageStyle, CK.ImageToolbar, CK.ImageUpload, CK.ImageResize,
                     CK.PendingActions, CK.Style, CK.GeneralHtmlSupport,
+                    CK.Table, CK.TableToolbar, CK.TablePropertiesEditing, CK.TableCellPropertiesEditing,
                 ],
                 extraPlugins: [ArticleImages, ArticleImageViewer, ArticleIllustrations],
+                htmlSupport: { allow: [
+                    { name: /^(p|h2|h3|h4)$/, attributes: { id: /^drupal-[A-Za-z0-9_-]{1,100}$/ } },
+                    { name: "a", classes: ["document-link"], attributes: { "data-document-format": /^(PDF|DOC|DOCX|ODT|RTF)$/, target: "_blank" } },
+                ] },
+                table: { contentToolbar: ["tableColumn", "tableRow", "mergeTableCells", "tableBorders"] },
                 link: {
                     decorators: {
                         illustration: { mode: "manual", label: "Иллюстрация", defaultValue: false,
@@ -339,7 +408,7 @@
                     toolbar: ["linkPreview", "|", "editLink", "unlink"],
                 },
                 toolbar: {
-                    items: ["undo", "redo", "|", "heading", "style", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "|", "uploadImage", "imageLibrary"],
+                    items: ["undo", "redo", "|", "heading", "style", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "insertTable", "|", "uploadImage", "imageLibrary", "documentLibrary"],
                     shouldNotGroupWhenFull: true,
                 },
                 heading: { options: [

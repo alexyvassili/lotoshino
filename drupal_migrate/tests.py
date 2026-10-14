@@ -132,6 +132,93 @@ class ManifestImportTests(TestCase):
             },
         }
 
+    def test_document_import_preserves_bytes_and_metadata_and_reuses_mapping(self):
+        from hashlib import sha256
+
+        from document_library.models import Document
+
+        from .importer import file_bytes, import_article
+        from .models import DrupalMigrateFileUsage
+
+        data = b"%PDF-1.4\nArchive leaflet\n%%EOF"
+        (self.root / "leaflet.pdf").write_bytes(data)
+        page = self.page | {
+            "images": {},
+            "html": '<p><a href="{{document:leaflet}}">Download</a></p>',
+            "documents": {
+                "leaflet": {
+                    "path": "/leaflet.pdf",
+                    "title": "Leaflet",
+                    "sha256": sha256(data).hexdigest(),
+                    "filemime": "application/pdf",
+                    "approved_as_master": True,
+                    "allow_unmanaged": True,
+                    "usages": [
+                        {
+                            "field": "body:document",
+                            "position": 0,
+                            "source_url": "/leaflet.pdf",
+                            "alt": "",
+                            "title": "",
+                            "width": None,
+                            "height": None,
+                        }
+                    ],
+                }
+            },
+        }
+        article, created = import_article(page, self.root)
+        self.assertTrue(created)
+        document = Document.objects.get()
+        self.assertEqual(file_bytes(document.file), data)
+        self.assertIn(document.get_link_url(), article.content)
+        self.assertEqual(document.file_format, "PDF")
+        self.assertEqual(document.original_name, "leaflet.pdf")
+        metadata = DrupalMigrateFileManaged.objects.get()
+        self.assertIsNone(metadata.drupal_migrate_file_id)
+        self.assertIsNone(metadata.drupal_migrate_width)
+        self.assertEqual(metadata.file_map.document, document)
+        page.update(nid=120, slug="another", urls=["/node/120"])
+        import_article(page, self.root)
+        self.assertEqual(Document.objects.count(), 1)
+        self.assertEqual(DrupalMigrateFileManaged.objects.count(), 1)
+        self.assertEqual(DrupalMigrateFileUsage.objects.count(), 2)
+        response = self.client.get(document.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), data)
+
+    def test_document_with_wrong_signature_leaves_no_article_or_files(self):
+        from hashlib import sha256
+
+        from django.core.exceptions import ValidationError
+
+        from document_library.models import Document
+
+        from .importer import import_article
+
+        data = b"MZ this is not a PDF"
+        (self.root / "bad.pdf").write_bytes(data)
+        page = self.page | {
+            "html": '<a href="{{document:bad}}">Bad</a>',
+            "images": {},
+            "documents": {
+                "bad": {
+                    "path": "/bad.pdf",
+                    "title": "Bad",
+                    "sha256": sha256(data).hexdigest(),
+                    "filemime": "application/pdf",
+                    "approved_as_master": True,
+                    "allow_unmanaged": True,
+                    "usages": [],
+                }
+            },
+        }
+        with self.assertRaises(ValidationError):
+            import_article(page, self.root)
+        self.assertFalse(Document.objects.exists())
+        self.assertFalse(Article.objects.exists())
+        self.assertFalse(DrupalMigrateArticles.objects.exists())
+
     def test_import_copies_archive_versions_verbatim_and_records_each_file(self):
         from uuid import UUID
 

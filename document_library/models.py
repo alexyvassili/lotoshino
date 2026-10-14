@@ -27,3 +27,8 @@ class Document(TimestampedModel):
 
     def get_absolute_url(self):
         return reverse("document_download", args=[self.pk])
+
+    def get_link_url(self):
+        if self.file_format == "PDF":
+            return reverse("document_view", args=[self.pk])
+        return self.get_absolute_url()

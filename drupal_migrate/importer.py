@@ -15,6 +15,8 @@ from PIL import Image as PillowImage
 
 from article_collections.models import Collection, CollectionItem
 from articles.models import Article
+from document_library.models import Document
+from document_library.validation import validate_document
 from media_library.models import Image, ImageRendition
 from site_settings.formats import IMAGE_FORMATS, validate_format
 from site_settings.uploads import validate_upload_size
@@ -134,6 +136,42 @@ def file_bytes(file):
         return stream.read()
 
 
+def verify_document(spec, root):
+    path = (root / spec["path"].lstrip("/")).resolve()
+    if not path.is_relative_to(root.resolve()) or not path.is_file():
+        raise ValueError("Document is missing or outside the archive root")
+    if not spec.get("approved_as_master"):
+        raise ValueError("Document must be reviewed")
+    if spec.get("fid") is None and not spec.get("allow_unmanaged"):
+        raise ValueError("Unregistered document needs a decision")
+    data = path.read_bytes()
+    if sha256(data).hexdigest() != spec["sha256"]:
+        raise ValueError("Document changed since review")
+    file_format = validate_document(SimpleUploadedFile(path.name, data))
+    return path, data, file_format
+
+
+def import_document(spec, root):
+    path, data, file_format = verify_document(spec, root)
+    metadata = existing_file(spec)
+    if metadata:
+        document = metadata.file_map.document
+        if document is None or file_bytes(document.file) != data:
+            raise ValueError("Existing document mapping does not match the archive")
+        return document, metadata
+    document = Document(
+        title=spec["title"], original_name=path.name, file_format=file_format
+    )
+    document.file = write_file(
+        document.file.storage, f"documents/{uuid4()}{path.suffix.lower()}", data
+    )
+    document.save()
+    metadata = metadata_for(
+        spec, (path, data, (None, None), spec["filemime"]), document=document
+    )
+    return document, metadata
+
+
 def import_image(spec, root):
     verified = verify_file(spec, root)
     metadata = existing_file(spec)
@@ -244,8 +282,11 @@ def import_article(page, root):
                 display.file.width,
                 display.file.height,
             )
+            alignment = spec.get("alignment", "left")
+            if alignment not in {"left", "right", "center"}:
+                raise ValueError("Unknown imported image alignment")
             figure = (
-                '<figure class="image image-style-align-left">'
+                f'<figure class="image image-style-align-{alignment}">'
                 f'<img src="{escape(display.file.url, quote=True)}" '
                 f'width="{width}" height="{height}" '
                 f'alt="{escape(spec.get("alt", ""), quote=True)}" '
@@ -263,7 +304,17 @@ def import_article(page, root):
                     else master_metadata
                 )
                 save_usage(source, metadata, usage)
-        if "{{image:" in content or "{{full:" in content:
+        for key, spec in page.get("documents", {}).items():
+            placeholder = f"{{{{document:{key}}}}}"
+            if placeholder not in content:
+                raise ValueError(f"Unused document in article: {key}")
+            document, metadata = import_document(spec, root)
+            content = content.replace(
+                placeholder, escape(document.get_link_url(), quote=True)
+            )
+            for usage in spec["usages"]:
+                save_usage(source, metadata, usage)
+        if any(token in content for token in ("{{image:", "{{full:", "{{document:")):
             raise ValueError("Unresolved file placeholder")
         article = Article.objects.create(
             title=page["title"],

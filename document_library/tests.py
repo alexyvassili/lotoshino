@@ -107,6 +107,110 @@ class DocumentLibraryTests(TestCase):
             },
         )
 
+    def test_editor_upload_search_and_pdf_inline_view(self):
+        from articles.models import Article
+
+        upload_url = reverse("admin:document_editor_upload")
+        for extension in ("pdf", "docx"):
+            response = self.client.post(
+                upload_url,
+                {
+                    "title": f"Leaflet {extension}",
+                    "file": SimpleUploadedFile(
+                        f"leaflet.{extension}", supported_documents()[extension]
+                    ),
+                },
+            )
+            self.assertEqual(response.status_code, 201, response.content)
+            item = response.json()
+            self.assertEqual(item["format"], extension.upper())
+            document = Document.objects.get(pk=item["id"])
+            self.assertEqual(item["url"], document.get_link_url())
+            result = self.client.get(item["url"])
+            disposition = "inline" if extension == "pdf" else "attachment"
+            self.assertTrue(result["Content-Disposition"].startswith(disposition))
+            self.assertEqual(
+                b"".join(result.streaming_content), supported_documents()[extension]
+            )
+        data = self.client.get(
+            reverse("admin:document_editor_library"), {"q": "Leaflet pdf"}
+        ).json()
+        self.assertEqual(len(data["documents"]), 1)
+        pdf = Document.objects.get(file_format="PDF")
+        article = Article.objects.create(
+            title="Document link",
+            content=f'<p><a class="document-link" data-document-format="PDF" href="{pdf.get_link_url()}" target="_blank">Read PDF</a></p>',
+        )
+        self.assertIn('data-document-format="PDF"', article.content)
+        self.assertIn('target="_blank"', article.content)
+        self.assertIn("noopener", article.content)
+        self.assertContains(
+            self.client.get(article.get_absolute_url()), 'class="document-link"'
+        )
+        self.assertEqual(self.client.get(upload_url).status_code, 405)
+        wrong = self.client.post(
+            upload_url,
+            {"title": "Wrong", "file": SimpleUploadedFile("bad.pdf", b"MZ executable")},
+        )
+        self.assertEqual(wrong.status_code, 400)
+        self.assertEqual(Document.objects.count(), 2)
+
+    def test_editor_requires_library_and_editing_permissions_and_csrf(self):
+        from django.contrib.auth.models import Permission
+        from django.test import Client
+
+        user = get_user_model().objects.create_user(
+            username="editor-docs", is_staff=True
+        )
+
+        def permission(code):
+            return Permission.objects.get(codename=code)
+
+        user.user_permissions.add(permission("view_document"))
+        self.client.force_login(user)
+        library_url = reverse("admin:document_editor_library")
+        self.assertEqual(self.client.get(library_url).status_code, 403)
+        user.user_permissions.add(permission("change_collection"))
+        self.assertEqual(self.client.get(library_url).status_code, 200)
+        upload_url = reverse("admin:document_editor_upload")
+        self.assertEqual(self.client.post(upload_url).status_code, 403)
+        user.user_permissions.add(permission("add_document"))
+        self.assertEqual(self.client.post(upload_url).status_code, 400)
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(user)
+        self.assertEqual(csrf_client.post(upload_url).status_code, 403)
+
+    def test_editor_respects_disabled_formats_and_size_limit(self):
+        self.upload("sample.pdf", supported_documents()["pdf"])
+        settings = SiteSettings.load()
+        settings.allow_file_pdf = False
+        settings.save()
+        data = self.client.get(reverse("admin:document_editor_library")).json()
+        self.assertEqual(data["documents"], [])
+        upload_url = reverse("admin:document_editor_upload")
+        response = self.client.post(
+            upload_url,
+            {
+                "title": "PDF",
+                "file": SimpleUploadedFile("file.pdf", supported_documents()["pdf"]),
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        settings.allow_file_pdf = True
+        settings.max_upload_size_mb = 1
+        settings.save()
+        response = self.client.post(
+            upload_url,
+            {
+                "title": "Large",
+                "file": SimpleUploadedFile(
+                    "large.pdf", b"%PDF-1.7\n" + bytes(1024 * 1024) + b"%%EOF"
+                ),
+            },
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(Document.objects.count(), 1)
+
     def test_all_formats_upload_and_download_unchanged(self):
         self.assertContains(
             self.client.get(reverse("admin:index")), "Библиотека документов"

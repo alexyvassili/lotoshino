@@ -5,6 +5,7 @@ from django.urls import include, path
 
 from article_collections.views import detail as collection_detail
 from document_library.views import download
+from document_library.views import view as document_view
 from media_library.serving import image_file
 
 from .views import favicon, index
@@ -16,6 +17,7 @@ urlpatterns = [
         name="image_file",
     ),
     path("documents/<int:pk>/download/", download, name="document_download"),
+    path("documents/<int:pk>/view/", document_view, name="document_view"),
     path("", index, name="index"),
     path("favicon.ico", favicon, name="favicon"),
     path("articles/", include("articles.urls")),

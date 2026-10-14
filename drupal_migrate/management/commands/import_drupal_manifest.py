@@ -3,7 +3,12 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from drupal_migrate.importer import import_article, import_collection, verify_file
+from drupal_migrate.importer import (
+    import_article,
+    import_collection,
+    verify_document,
+    verify_file,
+)
 
 
 class Command(BaseCommand):
@@ -29,6 +34,8 @@ class Command(BaseCommand):
                     }
                 )
             for page in pages:
+                for spec in page.get("documents", {}).values():
+                    verify_document(spec, options["web_root"])
                 for spec in page.get("images", {}).values():
                     verify_file(spec, options["web_root"])
                     if spec.get("display"):

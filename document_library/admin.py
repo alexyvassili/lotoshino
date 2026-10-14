@@ -1,13 +1,30 @@
 from django.contrib import admin
 from django.template.defaultfilters import filesizeformat
+from django.urls import path
 from django.utils.html import format_html
 
 from .forms import DocumentForm
 from .models import Document
+from .views import library, upload
 
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
+    def get_urls(self):
+        return [
+            path(
+                "editor/library/",
+                self.admin_site.admin_view(library),
+                name="document_editor_library",
+            ),
+            path(
+                "editor/upload/",
+                self.admin_site.admin_view(upload),
+                name="document_editor_upload",
+            ),
+            *super().get_urls(),
+        ]
+
     form = DocumentForm
     fields = (
         "title",
