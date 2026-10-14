@@ -132,6 +132,60 @@ class ManifestImportTests(TestCase):
             },
         }
 
+    def test_reviewed_gif_preserves_animation_but_uploads_stay_forbidden(self):
+        from hashlib import sha256
+        from io import BytesIO
+
+        from django.core.exceptions import ValidationError
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image as PillowImage
+
+        from media_library.forms import ImageForm
+        from media_library.renditions import article_image_data
+
+        from .importer import file_bytes, import_article, verify_file
+
+        source = self.root / "banner.gif"
+        frames = [PillowImage.new("RGB", (60, 20), color) for color in ("red", "blue")]
+        frames[0].save(
+            source, save_all=True, append_images=frames[1:], duration=100, loop=0
+        )
+        data = source.read_bytes()
+        spec = {
+            "path": "/banner.gif",
+            "title": "Banner",
+            "sha256": sha256(data).hexdigest(),
+            "approved_as_master": True,
+            "allow_unmanaged": True,
+            "usages": [],
+        }
+        with self.assertRaises(ValidationError):
+            verify_file(spec, self.root)
+        spec["allow_archived_gif"] = True
+        page = self.page | {"images": {"one": spec}, "html": "{{image:one}}"}
+        article, _ = import_article(page, self.root)
+        image = Image.objects.get()
+        self.assertEqual(file_bytes(image.file), data)
+        self.assertIn(image.file.url, article.content)
+        self.assertEqual(
+            image.file.path.split("/")[-2], image.file.name.split("/")[-1][:2]
+        )
+        with PillowImage.open(BytesIO(file_bytes(image.file))) as original:
+            self.assertEqual(original.n_frames, 2)
+        response = self.client.get(image.file.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/gif")
+        self.assertEqual(b"".join(response.streaming_content), data)
+        self.assertEqual(article_image_data(image)["full_url"], image.file.url)
+        self.assertEqual(image.renditions.count(), 0)
+        for filename in ("new.gif", "disguised.jpg"):
+            form = ImageForm(
+                data={"title": "New"},
+                files={"file": SimpleUploadedFile(filename, data)},
+            )
+            self.assertFalse(form.is_valid())
+            self.assertIn("file", form.errors)
+
     def test_document_import_preserves_bytes_and_metadata_and_reuses_mapping(self):
         from hashlib import sha256
 
@@ -302,6 +356,7 @@ class ManifestImportTests(TestCase):
                 {
                     "nid": 119,
                     "annotation": "Описание",
+                    "is_new": True,
                     "image": image_spec,
                     "usage": {
                         **image_spec["usages"][0],
@@ -318,6 +373,7 @@ class ManifestImportTests(TestCase):
         self.assertEqual(DrupalMigrateFileManaged.objects.count(), 3)
         self.assertEqual(len(list(self.media.rglob("*.jpg"))), 2)
         card = collection.items.get()
+        self.assertTrue(card.is_new)
         self.assertEqual(card.imported_preview.file.read(), self.thumbnail.read_bytes())
         with patch(
             "article_collections.views.article_image_data",

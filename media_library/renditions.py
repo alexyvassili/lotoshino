@@ -69,6 +69,24 @@ def article_renditions(image):
 
 
 def article_image_data(image):
+    # GIFs can only arrive through reviewed archive imports. Reuse their bytes
+    # when selected again, preserving animation instead of making static sizes.
+    if image.file.name.lower().endswith(".gif"):
+        with (
+            image.file.storage.open(image.file.name, "rb") as file,
+            PillowImage.open(file) as original,
+        ):
+            if original.format != "GIF":
+                raise ValueError("Unsupported image format")
+            width, height = original.size
+        return {
+            "id": image.pk,
+            "url": image.file.url,
+            "full_url": image.file.url,
+            "width": width,
+            "height": height,
+            "alt": image.alt_text,
+        }
     versions = article_renditions(image)
     preview, full = versions["preview"], versions["full"]
     return {

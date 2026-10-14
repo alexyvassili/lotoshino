@@ -54,6 +54,7 @@ class CollectionItemForm(forms.ModelForm):
             "image_caption",
             "annotation",
             "link_text",
+            "is_new",
             "position",
         )
         widgets: ClassVar = {

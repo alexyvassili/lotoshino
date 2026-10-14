@@ -10,7 +10,7 @@ IMAGE_FILENAME = re.compile(
     r"(?:[a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})"
     r"(?:_[A-Za-z0-9]{7})?"
     r"(?:_[1-9]\d{0,4}x[1-9]\d{0,4}(?:_[A-Za-z0-9]{7})?)?"
-    r"\.(?:jpg|jpeg|png|webp)"
+    r"\.(?:jpg|jpeg|png|webp|gif)"
 )
 
 

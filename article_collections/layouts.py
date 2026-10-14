@@ -12,6 +12,7 @@ def collection_template_choices():
     choices = [(DEFAULT_TEMPLATE, "Стандартный — изображение и аннотация")]
     for path in sorted(LAYOUT_DIRECTORY.glob("*.html")):
         label = {
+            "biblioteka-statei": "Библиотека статей",
             "azbuka-pravoslaviya": "Азбука Православия — текстовая страница",
             "compact": "Компактный — текстовый список",
             "history": "История благочиния — карточки как во Flask",

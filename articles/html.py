@@ -82,7 +82,7 @@ def filter_attribute(tag, name, value):
             if re.fullmatch(
                 prefix
                 + r"(?:[a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})"
-                + r"(?:_[A-Za-z0-9]{7})?(?:_[1-9]\d{0,4}x[1-9]\d{0,4}(?:_[A-Za-z0-9]{7})?)?\.(?:jpg|png|webp)",
+                + r"(?:_[A-Za-z0-9]{7})?(?:_[1-9]\d{0,4}x[1-9]\d{0,4}(?:_[A-Za-z0-9]{7})?)?\.(?:jpg|png|webp|gif)",
                 value,
             )
             else None

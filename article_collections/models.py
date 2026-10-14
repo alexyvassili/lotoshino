@@ -167,6 +167,7 @@ class CollectionItem(models.Model):
         related_name="collection_items",
     )
     link_text = models.CharField("Текст ссылки", max_length=100, default="Читать далее")
+    is_new = models.BooleanField("Новая статья", default=False)
     position = models.PositiveIntegerField("Порядок", default=0)
 
     class Meta:

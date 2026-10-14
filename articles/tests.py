@@ -145,7 +145,7 @@ class ArticleEditorTests(TestCase):
                 response = self.client.get(article.get_absolute_url())
                 self.assertContains(response, article.content)
                 self.assertContains(
-                    response, 'type="module" src="/static/articles/image_viewer.js?v=4"'
+                    response, 'type="module" src="/static/articles/image_viewer.js?v=5"'
                 )
                 self.assertContains(response, 'data-image-base="/media/images/"')
 

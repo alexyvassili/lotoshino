@@ -1,0 +1,68 @@
+.library-page-content {
+	padding-right: 32px;
+}
+
+.library-article-list {
+	display: grid;
+	gap: 18px;
+	margin-bottom: 24px;
+}
+
+.library-article-card {
+	background-color: rgba(255, 255, 255, 0.42);
+	border: 1px solid #d6cbaa;
+	border-radius: 6px;
+	overflow: hidden;
+	width: 100%;
+}
+
+.library-article-card-body {
+	background-color: rgba(33, 37, 41, 0.03);
+	padding: 16px 18px;
+}
+
+.library-card-badge {
+	background-color: #cc0000;
+	color: #fff;
+	display: inline-block;
+	font-family: Arial, Tahoma, Helvetica, sans-serif;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	margin-right: 6px;
+	padding: 2px 5px;
+	vertical-align: super;
+}
+
+.library-article-title {
+	font-family: Cambria, Arial, Tahoma, Helvetica, sans-serif;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.25;
+	margin-bottom: 10px;
+}
+
+.library-article-title a {
+	color: #000;
+	text-decoration: none;
+}
+
+.library-article-title a:hover {
+	color: #8b0000;
+	text-decoration: underline;
+}
+
+.library-page-content .library-article-excerpt p {
+	font-size: 15px;
+	line-height: 1.45;
+	margin-bottom: 10px;
+	text-indent: 0;
+}
+
+.library-article-more {
+	display: inline-block;
+}
+.library-page-content .library-article-excerpt p { text-align: justify; }
+@media (width < 768px) {
+    .library-page-content { padding-right: 0; }
+}

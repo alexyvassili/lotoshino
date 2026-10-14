@@ -24,6 +24,7 @@ class CollectionItemInline(admin.StackedInline):
         "image_caption",
         "annotation",
         "link_text",
+        "is_new",
         "position",
     )
     readonly_fields = ("publication_status",)

@@ -88,6 +88,38 @@ class CollectionTests(TestCase):
         collection.save()
         self.assertEqual(Client().get(collection.get_absolute_url()).status_code, 404)
 
+    def test_library_cards_new_badge_is_optional_and_drafts_are_hidden(self):
+        collection = Collection.objects.create(
+            title="Библиотека статей",
+            template_name="article_collections/layouts/biblioteka-statei.html",
+        )
+        card = CollectionItem.objects.create(
+            collection=collection,
+            article=self.article,
+            annotation="Первый абзац.\n\nВторой абзац.",
+            link_text="Продолжение",
+        )
+        self.assertFalse(card.is_new)
+        response = Client().get(collection.get_absolute_url())
+        self.assertNotContains(response, "Новая статья!")
+        self.assertContains(response, "<p>Первый абзац.</p>", html=True)
+        self.assertContains(response, "<p>Второй абзац.</p>", html=True)
+        self.assertContains(response, "Продолжение")
+        card.is_new = True
+        card.save()
+        self.assertContains(
+            Client().get(collection.get_absolute_url()), "Новая статья!", count=1
+        )
+        change_url = reverse(
+            "admin:article_collections_collection_change", args=[collection.pk]
+        )
+        self.assertContains(self.client.get(change_url), 'name="items-0-is_new"')
+        self.article.is_published = False
+        self.article.save()
+        response = Client().get(collection.get_absolute_url())
+        self.assertNotContains(response, "Новая статья!")
+        self.assertNotContains(response, "Первый абзац.")
+
     def test_public_order_titles_escaping_and_drafts(self):
         self.item(position=2, title="Custom heading")
         second = Article.objects.create(title="Second", content="")

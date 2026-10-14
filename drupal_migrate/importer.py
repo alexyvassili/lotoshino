@@ -90,7 +90,15 @@ def verify_file(spec, root, *, variant=False):
         raise ValueError(f"Source changed since review: {spec['path']}")
     validate_upload_size(SimpleUploadedFile(path.name, data))
     with PillowImage.open(path) as original:
-        validate_format(path.name, original.format, IMAGE_FORMATS)
+        # An explicitly reviewed archive GIF may be retained byte-for-byte.
+        # This exception never applies to forms or editor uploads.
+        archived_gif = (
+            spec.get("allow_archived_gif") is True
+            and original.format == "GIF"
+            and path.suffix.lower() == ".gif"
+        )
+        if not archived_gif:
+            validate_format(path.name, original.format, IMAGE_FORMATS)
         if original.width * original.height > 25_000_000:
             raise ValueError("Image exceeds 25 megapixels")
         dimensions = original.size
@@ -182,7 +190,12 @@ def import_image(spec, root):
         return mapping.image, metadata
     _, data, (width, height), mime = verified
     image = Image(title=spec["title"], alt_text=spec.get("alt", ""))
-    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[mime]
+    extension = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+    }[mime]
     stem = str(uuid4())
     # If the archive contains only a thumbnail, don't label its filename as an original.
     if spec.get("thumbnail_only"):
@@ -384,6 +397,7 @@ def import_collection(page, root):
                 annotation=item["annotation"],
                 image_caption=item.get("image_caption", ""),
                 link_text=item.get("link_text", "Читать далее"),
+                is_new=item.get("is_new", False),
                 position=position,
             )
         DrupalMigrateCollectionMap.objects.create(
