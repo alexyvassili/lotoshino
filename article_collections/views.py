@@ -92,12 +92,20 @@ def detail(request, slug):
     collection = get_object_or_404(Collection, slug=slug, is_published=True)
     items = list(
         collection.items.filter(article__is_published=True).select_related(
-            "article", "image"
+            "article", "image", "imported_preview"
         )
     )
     previews = {}
     for item in items:
         item.preview = None
+        if item.imported_preview_id and item.imported_preview.image_id == item.image_id:
+            version = item.imported_preview
+            item.preview = {
+                "url": version.file.url,
+                "width": version.width,
+                "height": version.height,
+            }
+            continue
         if item.image_id:
             if item.image_id not in previews:
                 try:

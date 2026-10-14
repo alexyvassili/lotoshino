@@ -409,7 +409,10 @@ class ImageEditorTests(TestCase):
                 )
                 self.assertEqual(response.status_code, 201)
                 image = Image.objects.get(pk=response.json()["id"])
-                self.assertRegex(Path(image.file.name).name, r"^[a-f0-9]{32}\.png$")
+                self.assertRegex(
+                    Path(image.file.name).name,
+                    r"^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.png$",
+                )
                 with PillowImage.open(image.file.path) as source:
                     self.assertEqual(source.size, expected_master)
                 for kind, expected in (
@@ -693,3 +696,110 @@ class ImageSettingsTests(TestCase):
         user.user_permissions.add(Permission.objects.get(codename="view_imagesettings"))
         self.assertRedirects(self.client.get(self.list_url), self.change_url)
         self.assertEqual(self.client.post(self.change_url, {}).status_code, 403)
+
+
+class ImageUUIDRenameTests(TestCase):
+    def setUp(self):
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        override = override_settings(MEDIA_ROOT=directory.name)
+        override.enable()
+        self.addCleanup(override.disable)
+
+    def test_rename_preserves_files_references_and_rendition_cache(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from uuid import UUID
+
+        from django.core.management import call_command
+
+        image = Image.objects.create(title="Image", file=uploaded_image((640, 480)))
+        stem = Path(image.file.name).stem
+        self.assertEqual(str(UUID(stem)), stem)
+        versions = article_renditions(image)
+        storage = image.file.storage
+        originals = {}
+        for obj in (image, *versions.values()):
+            modern = obj.file.name
+            legacy = modern.replace(stem, UUID(stem).hex)
+            with storage.open(modern, "rb") as source:
+                data = source.read()
+            originals[modern] = data
+            from django.core.files.base import ContentFile
+
+            storage.save(legacy, ContentFile(data))
+            storage.delete(modern)
+            type(obj).objects.filter(pk=obj.pk).update(file=legacy)
+        legacy_master = image.file.name.replace(stem, UUID(stem).hex)
+        ImageRendition.objects.update(source_name=legacy_master)
+        article = Article.objects.create(
+            title="Test",
+            content=(
+                f'<img src="{versions["preview"].file.url}" data-viewer="true" '
+                f'data-full-size="{versions["full"].file.url}">'
+                f'<a href="{image.file.url}" data-illustration="true">Illustration</a>'
+            ).replace(stem, UUID(stem).hex),
+        )
+        created, updated = article.created_at, article.updated_at
+        with redirect_stdout(StringIO()):
+            call_command("hyphenate_image_uuids")
+        image.refresh_from_db()
+        self.assertEqual(image.file.name, legacy_master)
+        with redirect_stdout(StringIO()):
+            call_command("hyphenate_image_uuids", apply=True)
+            call_command("hyphenate_image_uuids", apply=True)
+        image.refresh_from_db()
+        article.refresh_from_db()
+        self.assertEqual(image.file.name, f"images/{stem}.png")
+        self.assertNotIn(UUID(stem).hex, article.content)
+        self.assertIn(versions["preview"].file.url, article.content)
+        self.assertIn(versions["full"].file.url, article.content)
+        self.assertIn(image.file.url, article.content)
+        self.assertEqual((article.created_at, article.updated_at), (created, updated))
+        for name, expected in originals.items():
+            with storage.open(name, "rb") as file:
+                self.assertEqual(file.read(), expected)
+            self.assertFalse(storage.exists(name.replace(stem, UUID(stem).hex)))
+        self.assertEqual(
+            {key: obj.pk for key, obj in article_renditions(image).items()},
+            {key: obj.pk for key, obj in versions.items()},
+        )
+
+    def test_database_failure_keeps_old_files_and_removes_new_copies(self):
+        from io import StringIO
+        from unittest.mock import patch
+
+        from django.core.files.base import ContentFile
+        from django.core.management import call_command
+
+        old = "images/0123456789ab4def8123456789abcdef.png"
+        new = "images/01234567-89ab-4def-8123-456789abcdef.png"
+        storage = Image._meta.get_field("file").storage
+        storage.save(old, ContentFile(b"unchanged"))
+        image = Image.objects.create(title="Old", file=old)
+        with (
+            patch("django.db.models.query.QuerySet.update", side_effect=RuntimeError),
+            self.assertRaises(RuntimeError),
+        ):
+            call_command("hyphenate_image_uuids", apply=True, stdout=StringIO())
+        image.refresh_from_db()
+        self.assertEqual(image.file.name, old)
+        self.assertTrue(storage.exists(old))
+        self.assertFalse(storage.exists(new))
+
+    def test_existing_destination_is_never_overwritten(self):
+        from io import StringIO
+
+        from django.core.files.base import ContentFile
+        from django.core.management import CommandError, call_command
+
+        old = "images/0123456789ab4def8123456789abcdef.png"
+        new = "images/01234567-89ab-4def-8123-456789abcdef.png"
+        storage = Image._meta.get_field("file").storage
+        storage.save(old, ContentFile(b"old"))
+        storage.save(new, ContentFile(b"other"))
+        Image.objects.create(title="Old", file=old)
+        with self.assertRaises(CommandError):
+            call_command("hyphenate_image_uuids", apply=True, stdout=StringIO())
+        with storage.open(new, "rb") as file:
+            self.assertEqual(file.read(), b"other")

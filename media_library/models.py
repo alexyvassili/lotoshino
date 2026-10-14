@@ -9,7 +9,7 @@ from lotoshino.models import TimestampedModel
 
 
 def image_upload_path(instance, filename):
-    return f"images/{uuid4().hex}{Path(filename).suffix.lower()}"
+    return f"images/{uuid4()}{Path(filename).suffix.lower()}"
 
 
 def rendition_upload_path(instance, filename):
@@ -110,6 +110,7 @@ class ImageRendition(TimestampedModel):
     class Kind(models.TextChoices):
         ARTICLE_PREVIEW = "article_preview", "Статья — превью"
         ARTICLE_FULL = "article_full", "Статья — полная версия"
+        IMPORTED = "imported", "Версия из архива"
 
     image = models.ForeignKey(
         Image, on_delete=models.CASCADE, related_name="renditions"

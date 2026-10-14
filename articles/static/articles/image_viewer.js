@@ -8,7 +8,7 @@ if (content) {
         if (!value) return false;
         try {
             const url = new URL(value, window.location.href).href;
-            return url.startsWith(imageBase) && /^[a-f0-9]{32}(?:_[A-Za-z0-9]{7})?(?:_[1-9]\d{0,4}x[1-9]\d{0,4}(?:_[A-Za-z0-9]{7})?)?\.(jpg|png|webp)$/.test(url.slice(imageBase.length));
+            return url.startsWith(imageBase) && /^(?:[a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})(?:_[A-Za-z0-9]{7})?(?:_[1-9]\d{0,4}x[1-9]\d{0,4}(?:_[A-Za-z0-9]{7})?)?\.(jpg|png|webp)$/.test(url.slice(imageBase.length));
         } catch { return false; }
     };
     for (const link of content.querySelectorAll('a[data-illustration="true"]')) {

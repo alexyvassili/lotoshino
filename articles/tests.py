@@ -13,6 +13,8 @@ class ArticleEditorTests(TestCase):
             "a" * 32 + ".jpg",
             "a" * 32 + "_320x222.jpg",
             "a" * 32 + "_320x222_Ab12xYz.png",
+            "01234567-89ab-4def-8123-456789abcdef.png",
+            "01234567-89ab-4def-8123-456789abcdef_320x222.jpg",
         ):
             url = "/media/images/" + name
             content = f'<img src="{url}" data-full-size="{url}">'
@@ -92,7 +94,7 @@ class ArticleEditorTests(TestCase):
                 response = self.client.get(article.get_absolute_url())
                 self.assertContains(response, article.content)
                 self.assertContains(
-                    response, 'type="module" src="/static/articles/image_viewer.js"'
+                    response, 'type="module" src="/static/articles/image_viewer.js?v=2"'
                 )
                 self.assertContains(response, 'data-image-base="/media/images/"')
 

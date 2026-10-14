@@ -18,5 +18,5 @@
 
 {% block extra_js %}
 {{ image_downloads|json_script:"article-image-downloads" }}
-<script type="module" src="{% static 'articles/image_viewer.js' %}"></script>
+<script type="module" src="{% static 'articles/image_viewer.js' %}?v=2"></script>
 {% endblock %}

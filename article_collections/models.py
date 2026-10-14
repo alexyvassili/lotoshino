@@ -143,6 +143,14 @@ class CollectionItem(models.Model):
         blank=True,
     )
     annotation = models.TextField("Аннотация")
+    imported_preview = models.ForeignKey(
+        "media_library.ImageRendition",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="collection_items",
+    )
     link_text = models.CharField("Текст ссылки", max_length=100, default="Читать далее")
     position = models.PositiveIntegerField("Порядок", default=0)
 
@@ -162,4 +170,10 @@ class CollectionItem(models.Model):
     def save(self, **kwargs):
         if not self.title.strip():
             self.title = self.article.title
+        if self.imported_preview_id and self.imported_preview.image_id != self.image_id:
+            self.imported_preview = None
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = set(kwargs["update_fields"]) | {
+                    "imported_preview"
+                }
         super().save(**kwargs)
