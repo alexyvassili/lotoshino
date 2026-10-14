@@ -1,18 +1,23 @@
 /* Card layout from the Flask page, with captions below portraits and no dividers. */
 .martyrs-page-content { overflow-wrap: anywhere; }
-.martyrs-page-content > .mainblock-header { margin-bottom: 30px; }
+.martyrs-page-content > .mainblock-header { margin-bottom: 15px; }
 .page-main-content-col .martyrs-intro p { margin-bottom: 28px; line-height: 1.6; text-indent: 0; }
-.martyrs-list { display: grid; gap: 40px; }
+.page-main-content-col .martyrs-intro { margin-bottom: 20px; }
+.page-main-content-col .martyrs-intro > :last-child { margin-bottom: 0; }
+.martyrs-list { display: grid; gap: 28px; }
 .martyr-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 22px; border: 0; padding-bottom: 0; }
-.martyr-card-portrait { align-self: start; margin: 12px 0 0; }
+/* Align the portrait with the x-height top of the 19px heading. */
+.martyr-card-portrait { align-self: start; margin: 8px 0 0; }
 .martyr-card-portrait img { display: block; width: 100%; height: auto; border: 1px solid #c9b98f; border-radius: 6px; box-sizing: border-box; }
 .martyrs-page-content .martyr-card-title { font-size: 19px; font-weight: bold; line-height: 1.3; margin: 0 0 8px; }
 .martyr-card-title a { color: #000; text-decoration: none; }
 .martyr-card-title a:hover { color: #8b0000; text-decoration: underline; }
-.page-main-content-col .martyr-dates { color: #655a48; margin: 10px 0 0; text-align: center; line-height: 1.5; }
+.page-main-content-col .martyr-dates { color: #000; margin: 10px 0 0; text-align: center; line-height: 1.5; }
 .page-main-content-col .martyr-excerpt p { line-height: 1.6; margin-bottom: 12px; text-indent: 0; text-align: left; }
-.martyr-read-more { display: inline-block; margin-top: 4px; }
-.martyrs-source { margin: 28px 0; border: 0; padding: 0; }
+.page-main-content-col .martyr-excerpt > :last-child { margin-bottom: 4px; }
+.martyr-read-more { display: inline-block; margin-top: 0; }
+.martyrs-source { margin: 20px 0; border: 0; padding: 0; }
+.page-main-content-col .martyrs-source > :first-child { margin-top: 16px; }
 .page-main-content-col .martyrs-source p { text-align: left; text-indent: 0; line-height: 1.5; }
 .martyr-card-text-only { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 640px) {
