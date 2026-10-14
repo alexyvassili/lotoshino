@@ -1,11 +1,15 @@
+from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
+from django.db.migrations.loader import MigrationLoader
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
@@ -16,7 +20,7 @@ from media_library.tests import uploaded_image
 from media_library.usage import attach_image_pages
 from site_settings.models import SiteSettings
 
-from .forms import CollectionItemForm
+from .forms import CollectionForm, CollectionItemForm
 from .images import article_images
 from .layouts import DEFAULT_TEMPLATE, collection_template_choices
 from .models import Collection, CollectionItem
@@ -61,7 +65,7 @@ class CollectionTests(TestCase):
         self.assertContains(response, "More details")
         self.assertContains(response, "Читать далее")
         self.assertNotContains(response, "Secret")
-        self.assertContains(response, "&lt;script&gt;bad()&lt;/script&gt;")
+        self.assertNotContains(response, "<script>bad()</script>")
         self.collection.is_published = False
         self.collection.save()
         self.assertEqual(self.client.get("/history/").status_code, 404)
@@ -73,6 +77,150 @@ class CollectionTests(TestCase):
             with self.subTest(slug=slug), self.assertRaises(ValidationError):
                 Collection(title="Invalid", slug=slug).full_clean()
         self.assertEqual(self.client.get("/does-not-exist/").status_code, 404)
+
+    def test_martyrs_captions_footer_and_admin_fields(self):
+        collection = Collection.objects.create(
+            title="Новомученики",
+            slug="martyrs",
+            template_name="article_collections/layouts/novomucheniki-lotoshinskogo-okruga.html",
+            closing_text='<p>Источник <script>bad()</script></p><p><a href="mailto:editor@example.com">editor@example.com</a></p>',
+        )
+        CollectionItem.objects.create(
+            collection=collection,
+            article=self.article,
+            annotation="Биография",
+            image_caption="1881 — 1937",
+        )
+        response = Client().get(collection.get_absolute_url())
+        self.assertContains(
+            response,
+            '<figcaption class="martyr-dates">1881 — 1937</figcaption>',
+            html=True,
+        )
+        self.assertNotContains(response, "<script>bad()</script>")
+        self.assertContains(response, 'href="mailto:editor@example.com"')
+        html = response.content.decode()
+        self.assertLess(html.index("Биография"), html.index('class="martyrs-source '))
+        admin_response = self.client.get(
+            reverse("admin:article_collections_collection_change", args=[collection.pk])
+        )
+        self.assertContains(admin_response, 'name="closing_text"')
+        self.assertContains(admin_response, 'name="items-0-image_caption"')
+
+    def test_martyrs_content_migration_preserves_text_and_other_collections(self):
+        migration = import_module(
+            "article_collections.migrations.0007_martyrs_layout_content"
+        )
+        original_intro = (
+            "Вступление\n\nМатериал найден, собран и подготовлен редакцией."
+        )
+        original_annotation = "1881 — 27.11.1937\n\nБиография\n\nЕщё абзац."
+        card = self.item(image_caption="")
+        card.annotation = original_annotation
+        card.save()
+        Collection.objects.filter(pk=self.collection.pk).update(
+            template_name=migration.OLD,
+            introduction=original_intro,
+        )
+        other = Collection.objects.create(title="Other", introduction=original_intro)
+        editor = SimpleNamespace(connection=connection)
+        historical_apps = (
+            MigrationLoader(connection)
+            .project_state(
+                [
+                    (
+                        "article_collections",
+                        "0006_collection_closing_text_collectionitem_image_caption",
+                    )
+                ]
+            )
+            .apps
+        )
+        migration.forwards(historical_apps, editor)
+        self.collection.refresh_from_db()
+        card.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(self.collection.template_name, migration.NEW)
+        self.assertEqual(
+            self.collection.introduction + "\n\n" + self.collection.closing_text,
+            original_intro,
+        )
+        self.assertEqual(
+            card.image_caption + "\n\n" + card.annotation, original_annotation
+        )
+        self.assertEqual(other.introduction, original_intro)
+        self.assertEqual(other.closing_text, "")
+        migration.backwards(historical_apps, editor)
+        self.collection.refresh_from_db()
+        card.refresh_from_db()
+        self.assertEqual(self.collection.introduction, original_intro)
+        self.assertEqual(card.annotation, original_annotation)
+
+    def test_collection_rich_text_forms_and_public_layouts(self):
+        content = '<p class="article-annotation"><strong>Note</strong></p><p><a href="/">Home</a></p>'
+        for index, (template, _) in enumerate(collection_template_choices()):
+            form = CollectionForm(
+                data={
+                    "title": "Rich text",
+                    "slug": f"rich-{index}",
+                    "template_name": template,
+                    "is_published": True,
+                    "introduction": content,
+                    "closing_text": content
+                    + '<script>bad()</script><p onclick="bad()">End</p>',
+                }
+            )
+            self.assertTrue(form.is_valid(), form.errors)
+            collection = form.save()
+            self.assertNotIn("<script>", collection.closing_text)
+            self.assertNotIn("onclick", collection.closing_text)
+            response = Client().get(collection.get_absolute_url())
+            self.assertContains(
+                response,
+                '<p class="article-annotation"><strong>Note</strong></p>',
+                count=2,
+                html=True,
+            )
+            self.assertContains(response, 'data-image-base="/media/images/"', count=2)
+            self.assertNotContains(response, "&lt;p")
+            admin_response = self.client.get(
+                reverse(
+                    "admin:article_collections_collection_change", args=[collection.pk]
+                )
+            )
+            self.assertContains(admin_response, 'data-article-editor="true"', count=2)
+            self.assertContains(
+                admin_response, reverse("admin:collection_image_upload")
+            )
+        for field in ("introduction", "closing_text"):
+            form = CollectionForm(
+                data={
+                    "title": "Bad",
+                    "template_name": DEFAULT_TEMPLATE,
+                    field: '<p><a href="https://example.com/x.jpg" data-illustration="true">X</a></p>',
+                }
+            )
+            self.assertFalse(form.is_valid())
+            self.assertIn(field, form.errors)
+
+    def test_plain_collection_text_migration_escapes_and_keeps_paragraphs(self):
+        migration = import_module(
+            "article_collections.migrations.0008_collection_rich_text"
+        )
+        Collection.objects.filter(pk=self.collection.pk).update(
+            introduction="First\n\nSecond <script>alert(1)</script>",
+            closing_text="Contact editor@example.com",
+        )
+        registry = (
+            MigrationLoader(connection)
+            .project_state([("article_collections", "0007_martyrs_layout_content")])
+            .apps
+        )
+        migration.forwards(registry, SimpleNamespace(connection=connection))
+        self.collection.refresh_from_db()
+        self.assertIn("<p>First</p>", self.collection.introduction)
+        self.assertIn("&lt;script&gt;", self.collection.introduction)
+        self.assertIn('href="mailto:editor@example.com"', self.collection.closing_text)
 
     def test_invalid_collection_form_shows_errors(self):
         for slug in ("/invalid/address/", "адрес"):

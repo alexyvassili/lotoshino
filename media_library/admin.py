@@ -122,7 +122,7 @@ class ImageAdmin(admin.ModelAdmin):
 
     class Media:
         js = (
-            Script("media_library/image_preview.js", type="module"),
+            Script("media_library/image_preview.js?v=2", type="module"),
             "media_library/copy_image_url.js",
         )
         css: ClassVar = {"all": ("media_library/copy_image_url.css",)}

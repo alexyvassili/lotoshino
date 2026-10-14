@@ -8,6 +8,27 @@ from .models import Article
 
 
 class ArticleEditorTests(TestCase):
+    def test_annotation_survives_save_and_render_without_arbitrary_classes(self):
+        form = ArticleForm(
+            data={
+                "title": "Annotation",
+                "is_published": True,
+                "content": '<p class="article-annotation unwanted" onclick="bad()" style="color:red">'
+                'Текст <strong>аннотации</strong></p><p class="article-annotation">Продолжение</p>'
+                '<p class="unwanted">Обычный абзац</p>',
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        article = form.save()
+        article.refresh_from_db()
+        self.assertEqual(article.content.count('class="article-annotation"'), 2)
+        for forbidden in ("unwanted", "onclick", "color:red"):
+            self.assertNotIn(forbidden, article.content)
+        self.assertEqual(clean_article_html(article.content), article.content)
+        self.assertContains(
+            self.client.get(article.get_absolute_url()), article.content
+        )
+
     def test_actual_dimension_names_survive_html_cleanup(self):
         for name in (
             "a" * 32 + ".jpg",
@@ -94,7 +115,7 @@ class ArticleEditorTests(TestCase):
                 response = self.client.get(article.get_absolute_url())
                 self.assertContains(response, article.content)
                 self.assertContains(
-                    response, 'type="module" src="/static/articles/image_viewer.js?v=2"'
+                    response, 'type="module" src="/static/articles/image_viewer.js?v=4"'
                 )
                 self.assertContains(response, 'data-image-base="/media/images/"')
 

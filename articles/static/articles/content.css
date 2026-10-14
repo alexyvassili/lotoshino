@@ -1,4 +1,20 @@
 /* Shared by the editor and article templates using class="article-content ck-content". */
+:is(.article-content, .ck-content) p.article-annotation {
+    border-left: 3px solid #c9b98f;
+    padding-left: 18px;
+    margin: 28px 0;
+    text-indent: 0;
+    text-align: left;
+    line-height: 1.5;
+}
+/* Adjacent annotated paragraphs form one continuous vertical line. */
+:is(.article-content, .ck-content) p.article-annotation:has(+ p.article-annotation) {
+    margin-bottom: 0;
+    padding-bottom: 1em;
+}
+:is(.article-content, .ck-content) p.article-annotation + p.article-annotation {
+    margin-top: 0;
+}
 :is(.article-content, .ck-content) {
     display: flow-root;
     overflow-wrap: anywhere;

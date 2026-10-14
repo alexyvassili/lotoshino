@@ -1,10 +1,16 @@
 from django import forms
 from django.urls import reverse
 
+from articles.widgets import ArticleEditorWidget
 from media_library.models import Image
 from site_settings.formats import IMAGE_FORMATS, allowed_extensions
 
 from .images import picker_image
+
+
+class CollectionEditorWidget(ArticleEditorWidget):
+    upload_url_name = "admin:collection_image_upload"
+    library_url_name = "admin:collection_image_picker"
 
 
 class CollectionImageWidget(forms.HiddenInput):

@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, router, transaction
 from django.urls import Resolver404, resolve, reverse
 
+from articles.html import clean_article_html
 from articles.slugs import article_slug_base, available_slug
 from lotoshino.models import TimestampedModel
 
@@ -22,6 +23,11 @@ class Collection(TimestampedModel):
         ),
     )
     introduction = models.TextField("Вступительный текст", blank=True)
+    closing_text = models.TextField(
+        "Заключительный текст",
+        blank=True,
+        help_text="Выводится после списка статей. Например, сведения об источнике материалов.",
+    )
     is_published = models.BooleanField("Опубликовано", default=True)
     template_name = models.CharField(
         "Шаблон",
@@ -90,6 +96,9 @@ class Collection(TimestampedModel):
     def save(self, **kwargs):
         if kwargs.get("update_fields") is not None and not kwargs["update_fields"]:
             return super().save(**kwargs)
+        for name in ("introduction", "closing_text"):
+            if kwargs.get("update_fields") is None or name in kwargs["update_fields"]:
+                setattr(self, name, clean_article_html(getattr(self, name)))
         if (
             kwargs.get("update_fields") is None
             or "template_name" in kwargs["update_fields"]
@@ -143,6 +152,12 @@ class CollectionItem(models.Model):
         blank=True,
     )
     annotation = models.TextField("Аннотация")
+    image_caption = models.CharField(
+        "Подпись под изображением",
+        max_length=255,
+        blank=True,
+        help_text="Например, годы жизни для портрета.",
+    )
     imported_preview = models.ForeignKey(
         "media_library.ImageRendition",
         on_delete=models.SET_NULL,

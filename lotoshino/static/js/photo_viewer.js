@@ -35,7 +35,7 @@ const CSS = `
     height: 100vh; height: 100dvh; max-height: none; margin: 0; padding: 0;
     border: 0; color: #f4f1eb; background: #090a0c; overflow: hidden;
     font: 15px/1.4 system-ui, sans-serif; text-align: left;
-    overscroll-behavior: contain; color-scheme: dark;
+    overscroll-behavior: contain; color-scheme: dark; touch-action: pan-x pan-y;
 }
 .lpv[open] { display: flex; flex-direction: column; }
 .lpv::backdrop { background: #090a0c; }
@@ -66,7 +66,7 @@ const CSS = `
     background: #101114; z-index: 2;
 }
 .lpv-counter { margin-right: auto; font-variant-numeric: tabular-nums; color: #c5c5ca; }
-.lpv-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.lpv-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: none; }
 .lpv-canvas { position: absolute; inset: 8px 64px; display: grid; place-items: center;
     overflow: hidden; touch-action: none; user-select: none; }
 .lpv-image { display: block; max-width: none; max-height: none; border: 0;
@@ -149,6 +149,7 @@ export default class PhotoViewer {
         this.loadID = 0;
         this.scale = 1;
         this.pan = { x: 0, y: 0 };
+        this.pointers = new Map();
         this.extraAttributes = [];
         this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
         this.overlay = overlay;
@@ -267,7 +268,15 @@ export default class PhotoViewer {
         this.listen(this.canvas, 'pointermove', event => this.pointerMove(event));
         this.listen(this.canvas, 'pointerup', event => this.pointerUp(event));
         this.listen(this.canvas, 'pointercancel', () => this.cancelGesture());
-        this.listen(this.canvas, 'lostpointercapture', () => this.cancelGesture());
+        this.listen(this.canvas, 'lostpointercapture', event => {
+            if (this.pointers.has(event.pointerId)) this.cancelGesture();
+        });
+        this.listen(this.dialog, 'wheel', event => this.wheelZoom(event), { passive: false });
+        // Safari trackpads also expose GestureEvents. Touchscreen pinches use
+        // PointerEvents; never apply both streams to the same gesture.
+        for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+            this.listen(this.dialog, type, event => this.nativePinch(event), { passive: false });
+        }
         this.listen(this.canvas, 'dblclick', event => {
             if (event.target === this.image) this.toggleZoom();
         });
@@ -451,6 +460,53 @@ export default class PhotoViewer {
         this.animate(this.image, [{ transform: before }, { transform: this.image.style.transform }], 180);
     }
 
+    zoomAt(scale, point, origin = { scale: this.scale, pan: this.pan, point }) {
+        if (!this.image || !Number.isFinite(scale)) return;
+        this.image.getAnimations().forEach(animation => animation.cancel());
+        this.scale = Math.max(1, Math.min(8, scale));
+        const rect = this.canvas.getBoundingClientRect();
+        const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        const ratio = this.scale / origin.scale;
+        this.pan = {
+            x: point.x - center.x - (origin.point.x - center.x - origin.pan.x) * ratio,
+            y: point.y - center.y - (origin.point.y - center.y - origin.pan.y) * ratio,
+        };
+        this.transform();
+        this.updateZoom();
+    }
+
+    eventPoint(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        // Gestures over the toolbar/backdrop (or Safari events without a
+        // position) zoom around the image's center.
+        return event.clientX >= rect.left && event.clientX <= rect.right &&
+            event.clientY >= rect.top && event.clientY <= rect.bottom
+            ? { x: event.clientX, y: event.clientY }
+            : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+
+    wheelZoom(event) {
+        if (!this.dialog.open || (!event.ctrlKey && !this.canvas.contains(event.target))) return;
+        event.preventDefault();
+        if (this.nativeGesture || this.pointers.size > 1) return;
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.canvas.clientHeight : 1;
+        const delta = Math.max(-100, Math.min(100, event.deltaY * unit));
+        this.zoomAt(this.scale * Math.exp(-delta * (event.ctrlKey ? .01 : .002)), this.eventPoint(event));
+        if (this.pointers.size) this.beginGesture();
+    }
+
+    nativePinch(event) {
+        if (!this.dialog.open) return;
+        event.preventDefault();
+        if (event.type === 'gestureend') { this.nativeGesture = null; return; }
+        if (this.pointers.size > 1) return;
+        if (event.type === 'gesturestart') {
+            this.nativeGesture = { scale: this.scale, pan: { ...this.pan }, point: this.eventPoint(event) };
+        } else if (this.nativeGesture) {
+            this.zoomAt(this.nativeGesture.scale * event.scale, this.eventPoint(event), this.nativeGesture);
+        }
+    }
+
     updateZoom() {
         const zoomed = this.scale > 1;
         const label = zoomed ? 'Уменьшить фотографию' : 'Увеличить фотографию';
@@ -495,33 +551,61 @@ export default class PhotoViewer {
     }
 
     pointerDown(event) {
-        if (!event.isPrimary || event.button !== 0 || !this.image) return;
+        if (event.button !== 0 || !this.image) return;
         this.image.getAnimations().forEach(animation => animation.cancel());
-        this.gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, pan: { ...this.pan } };
+        this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         this.canvas.setPointerCapture(event.pointerId);
-        this.canvas.dataset.dragging = String(this.scale > 1);
+        if (this.pointers.size > 1) this.nativeGesture = null;
+        this.beginGesture(this.pointers.size === 1);
+    }
+
+    beginGesture(allowSwipe = false) {
+        const [first, second] = this.pointers.values();
+        this.gesture = first ? {
+            point: second ? { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 } : { ...first },
+            distance: second ? Math.max(1, Math.hypot(first.x - second.x, first.y - second.y)) : 0,
+            scale: this.scale, pan: { ...this.pan }, allowSwipe,
+        } : null;
+        this.canvas.dataset.dragging = String(!!first && this.scale > 1);
     }
 
     pointerMove(event) {
-        if (!this.gesture || event.pointerId !== this.gesture.id || this.scale === 1) return;
-        this.pan = { x: this.gesture.pan.x + event.clientX - this.gesture.x,
-            y: this.gesture.pan.y + event.clientY - this.gesture.y };
-        this.transform();
+        if (!this.pointers.has(event.pointerId) || !this.gesture) return;
+        this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const [first, second] = this.pointers.values();
+        if (second) {
+            const distance = Math.hypot(first.x - second.x, first.y - second.y);
+            const point = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+            this.zoomAt(this.gesture.scale * distance / this.gesture.distance, point, this.gesture);
+        } else if (this.scale > 1) {
+            this.pan = { x: this.gesture.pan.x + first.x - this.gesture.point.x,
+                y: this.gesture.pan.y + first.y - this.gesture.point.y };
+            this.transform();
+        }
+        this.canvas.dataset.dragging = String(this.scale > 1);
     }
 
     pointerUp(event) {
-        if (!this.gesture || event.pointerId !== this.gesture.id) return;
-        const dx = event.clientX - this.gesture.x;
-        const dy = event.clientY - this.gesture.y;
-        this.cancelGesture();
-        if (this.scale === 1 && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) this.step(dx < 0 ? 1 : -1);
+        if (!this.pointers.has(event.pointerId) || !this.gesture) return;
+        const dx = event.clientX - this.gesture.point.x;
+        const dy = event.clientY - this.gesture.point.y;
+        const swipe = this.pointers.size === 1 && this.gesture.allowSwipe && this.scale === 1;
+        this.pointers.delete(event.pointerId);
+        if (this.canvas.hasPointerCapture(event.pointerId)) this.canvas.releasePointerCapture(event.pointerId);
+        // Continue dragging with the remaining finger without a jump or a swipe.
+        this.beginGesture();
+        if (swipe && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) this.step(dx < 0 ? 1 : -1);
     }
 
     cancelGesture() {
-        const id = this.gesture?.id;
+        const ids = [...this.pointers.keys()];
+        this.pointers.clear();
         this.gesture = null;
+        this.nativeGesture = null;
         this.canvas.dataset.dragging = 'false';
-        if (id !== undefined && this.canvas.hasPointerCapture(id)) this.canvas.releasePointerCapture(id);
+        for (const id of ids) {
+            if (this.canvas.hasPointerCapture(id)) this.canvas.releasePointerCapture(id);
+        }
     }
 
     animate(element, frames, duration) {

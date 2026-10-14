@@ -5,7 +5,7 @@ from django.urls import path
 from django.utils.html import format_html
 
 from . import views
-from .forms import CollectionItemForm
+from .forms import CollectionForm, CollectionItemForm
 from .models import Collection, CollectionItem
 
 
@@ -20,6 +20,7 @@ class CollectionItemInline(admin.StackedInline):
         "publication_status",
         "title",
         "image",
+        "image_caption",
         "annotation",
         "link_text",
         "position",
@@ -49,7 +50,15 @@ class CollectionItemInline(admin.StackedInline):
 
 @admin.register(Collection)
 class CollectionAdmin(admin.ModelAdmin):
-    fields = ("title", "slug", "template_name", "introduction", "is_published")
+    form = CollectionForm
+    fields = (
+        "title",
+        "slug",
+        "template_name",
+        "introduction",
+        "closing_text",
+        "is_published",
+    )
     list_display = ("title", "slug", "template_display", "is_published", "updated_at")
     list_filter = ("is_published",)
     search_fields = ("title", "slug", "introduction")

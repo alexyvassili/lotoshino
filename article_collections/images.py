@@ -2,6 +2,7 @@ from html.parser import HTMLParser
 
 from django.conf import settings
 from django.db.models import Q
+from django.urls import reverse
 
 from media_library.models import Image
 
@@ -39,5 +40,7 @@ def picker_image(image):
     return {
         "id": image.pk,
         "title": image.title,
+        "alt": image.alt_text,
+        "prepare_url": reverse("admin:collection_image_prepare", args=[image.pk]),
         "url": preview.file.url if preview else image.file.url,
     }

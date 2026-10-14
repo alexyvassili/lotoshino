@@ -10,6 +10,7 @@ from uuid import uuid4
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
+from django.utils.html import linebreaks, urlize
 from PIL import Image as PillowImage
 
 from article_collections.models import Collection, CollectionItem
@@ -291,7 +292,12 @@ def import_collection(page, root):
         collection = Collection.objects.create(
             title=page["title"],
             slug=page["slug"],
-            introduction=page.get("introduction", ""),
+            introduction=linebreaks(urlize(escape(page.get("introduction", ""))))
+            if page.get("introduction")
+            else "",
+            closing_text=linebreaks(urlize(escape(page.get("closing_text", ""))))
+            if page.get("closing_text")
+            else "",
             is_published=bool(page["status"]),
             template_name=page["template_name"],
         )
@@ -325,6 +331,7 @@ def import_collection(page, root):
                 imported_preview=preview,
                 title=item.get("title", ""),
                 annotation=item["annotation"],
+                image_caption=item.get("image_caption", ""),
                 link_text=item.get("link_text", "Читать далее"),
                 position=position,
             )

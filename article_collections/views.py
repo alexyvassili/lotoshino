@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -9,7 +10,9 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST, require_safe
 from PIL import Image as PillowImage
 
+from articles.html import clean_article_html
 from articles.models import Article
+from media_library.downloads import image_download_urls
 from media_library.forms import ImageForm
 from media_library.models import Image
 from media_library.renditions import article_image_data
@@ -116,5 +119,14 @@ def detail(request, slug):
     return render(
         request,
         collection.template_name,
-        {"collection": collection, "items": items},
+        {
+            "collection": collection,
+            "items": items,
+            "introduction_content": clean_article_html(collection.introduction),
+            "closing_content": clean_article_html(collection.closing_text),
+            "image_downloads": image_download_urls(
+                collection.introduction + collection.closing_text
+            ),
+            "image_base": settings.MEDIA_URL.rstrip("/") + "/images/",
+        },
     )

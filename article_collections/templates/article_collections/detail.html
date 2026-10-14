@@ -1,12 +1,12 @@
 {% extends "site_layout.html" %}
 {% load static %}
 {% block title %}{{ collection.title }} — Лотошинский церковный округ{% endblock %}
-{% block description %}{{ collection.introduction|truncatewords:30 }}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'article_collections/detail.css' %}">{% endblock %}
+{% block description %}{{ introduction_content|striptags|truncatewords:30 }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'articles/content.css' %}?v=5"><link rel="stylesheet" href="{% static 'articles/detail.css' %}?v=3"><link rel="stylesheet" href="{% static 'article_collections/detail.css' %}">{% endblock %}
 {% block maincontent %}
 <section class="article-collection">
     <h1 class="mainblock-header">{{ collection.title }}</h1>
-    {% if collection.introduction %}<div class="collection-introduction">{{ collection.introduction|linebreaks }}</div>{% endif %}
+    {% if collection.introduction %}<div class="collection-introduction article-content ck-content" data-image-base="{{ image_base }}">{{ introduction_content|safe }}</div>{% endif %}
     {% block collection_items %}
     {% for item in items %}
     <article class="collection-entry">
@@ -17,5 +17,11 @@
     </article>
     {% empty %}<p>Статьи скоро появятся.</p>{% endfor %}
     {% endblock %}
+    {% if collection.closing_text %}<div class="collection-closing-text article-content ck-content" data-image-base="{{ image_base }}">{{ closing_content|safe }}</div>{% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{{ image_downloads|json_script:"article-image-downloads" }}
+<script type="module" src="{% static 'articles/image_viewer.js' %}?v=4"></script>
 {% endblock %}

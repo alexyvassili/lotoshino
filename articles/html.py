@@ -18,6 +18,10 @@ def filter_attribute(tag, name, value):
     if tag == "a" and name == "data-illustration":
         return "true" if value == "true" else None
     if name == "class":
+        if tag == "p":
+            return (
+                "article-annotation" if "article-annotation" in value.split() else None
+            )
         return " ".join(part for part in value.split() if part in IMAGE_CLASSES) or None
     if name == "style":
         match = re.fullmatch(r"\s*width\s*:\s*(\d+(?:\.\d+)?)%\s*;?\s*", value)
@@ -65,6 +69,7 @@ def clean_article_html(value):
             "img",
         },
         attributes={
+            "p": {"class"},
             "a": {"href", "title", "data-illustration"},
             "figure": {"class", "style"},
             "img": {"src", "alt", "width", "height", "data-viewer", "data-full-size"},

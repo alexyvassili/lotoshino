@@ -1,7 +1,7 @@
 from collections import defaultdict
 from html.parser import HTMLParser
 
-from article_collections.models import CollectionItem
+from article_collections.models import Collection, CollectionItem
 from articles.html import clean_article_html
 from articles.illustrations import is_local_illustration_url
 from articles.models import Article
@@ -55,6 +55,19 @@ def attach_image_pages(images):
             )
 
     seen = set()
+    for collection in Collection.objects.only(
+        "pk", "title", "slug", "introduction", "closing_text"
+    ).order_by("title", "pk"):
+        sources = ImageSources()
+        sources.feed(
+            clean_article_html(collection.introduction + collection.closing_text)
+        )
+        used_ids = {pk for url in sources.urls for pk in images_by_url.get(url, ())}
+        for pk in used_ids:
+            seen.add((pk, collection.pk))
+            images_by_id[pk].used_pages.append(
+                (collection.get_absolute_url(), collection.title)
+            )
     for item in (
         CollectionItem.objects.filter(image_id__in=images_by_id)
         .select_related("collection")

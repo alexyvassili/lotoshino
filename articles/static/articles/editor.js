@@ -1,18 +1,20 @@
 (() => {
     "use strict";
 
+    const protectedForms = new WeakMap();
+
     function protectUnsavedChanges(textarea) {
         const form = textarea.form;
+        if (protectedForms.has(form)) return protectedForms.get(form);
         const read = () => Object.fromEntries(
-            ["title", "slug", "is_published", "content"].map((name) => {
-                const field = form.elements.namedItem(name);
-                return [name, field?.type === "checkbox" ? field.checked : field?.value];
-            }),
+            Array.from(form.elements)
+                .filter(field => field.name && !["submit", "button", "file"].includes(field.type) && field.name !== "csrfmiddlewaretoken")
+                .map(field => [field.name, ["checkbox", "radio"].includes(field.type) ? field.checked : field.value]),
         );
         const initial = read();
         const hasValidationErrors = Boolean(form.querySelector(".errorlist"));
         let submitting = false;
-        let pendingActions;
+        const pendingActions = new Set();
         const resumeProtection = () => { submitting = false; };
         window.addEventListener("pageshow", resumeProtection);
         form.addEventListener("input", resumeProtection);
@@ -20,7 +22,7 @@
 
         window.addEventListener("beforeunload", (event) => {
             const changed = JSON.stringify(read()) !== JSON.stringify(initial);
-            if (!submitting && (changed || hasValidationErrors || pendingActions?.hasAny)) {
+            if (!submitting && (changed || hasValidationErrors || Array.from(pendingActions).some(actions => actions.hasAny))) {
                 event.preventDefault();
                 event.returnValue = "";
             }
@@ -31,13 +33,16 @@
                 submitting = !event.defaultPrevented;
             }
         });
-        return (editor) => {
+        const ready = (editor) => {
             // CKEditor normalizes HTML on startup; this is not a user edit.
-            initial.content = editor.getData();
+            const source = editor.sourceElement;
+            initial[source.name] = editor.getData();
             editor.updateSourceElement();
-            pendingActions = editor.plugins.get("PendingActions");
+            pendingActions.add(editor.plugins.get("PendingActions"));
             editor.model.document.on("change:data", resumeProtection);
         };
+        protectedForms.set(form, ready);
+        return ready;
     }
 
     class UploadAdapter {
@@ -323,7 +328,7 @@
                     CK.Essentials, CK.Paragraph, CK.Heading, CK.Bold, CK.Italic,
                     CK.Link, CK.LinkImage, CK.List, CK.BlockQuote, CK.ImageBlock, CK.ImageCaption,
                     CK.ImageStyle, CK.ImageToolbar, CK.ImageUpload, CK.ImageResize,
-                    CK.PendingActions,
+                    CK.PendingActions, CK.Style, CK.GeneralHtmlSupport,
                 ],
                 extraPlugins: [ArticleImages, ArticleImageViewer, ArticleIllustrations],
                 link: {
@@ -334,13 +339,16 @@
                     toolbar: ["linkPreview", "|", "editLink", "unlink"],
                 },
                 toolbar: {
-                    items: ["undo", "redo", "|", "heading", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "|", "uploadImage", "imageLibrary"],
+                    items: ["undo", "redo", "|", "heading", "style", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "|", "uploadImage", "imageLibrary"],
                     shouldNotGroupWhenFull: true,
                 },
                 heading: { options: [
                     { model: "paragraph", title: "Абзац", class: "ck-heading_paragraph" },
                     { model: "heading2", view: "h2", title: "Заголовок 2", class: "ck-heading_heading2" },
                     { model: "heading3", view: "h3", title: "Заголовок 3", class: "ck-heading_heading3" },
+                ] },
+                style: { definitions: [
+                    { name: "Аннотация", element: "p", classes: ["article-annotation"] },
                 ] },
                 image: {
                     upload: { types: textarea.dataset.imageTypes.split(",").filter(Boolean) },

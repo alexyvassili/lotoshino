@@ -1,7 +1,6 @@
-import PhotoViewer from '../js/photo_viewer.js';
+import PhotoViewer from '../js/photo_viewer.js?v=2';
 
-const content = document.querySelector('.article-content[data-image-base]');
-if (content) {
+for (const content of document.querySelectorAll('.article-content[data-image-base]')) {
     const downloads = JSON.parse(document.getElementById('article-image-downloads')?.textContent || '{}');
     const imageBase = new URL(content.dataset.imageBase, window.location.href).href;
     const libraryImage = (value) => {

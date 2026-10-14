@@ -5,7 +5,7 @@
 {% block description %}{{ article_content|striptags|truncatewords:30 }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'articles/content.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'articles/content.css' %}?v=5">
 <link rel="stylesheet" href="{% static 'articles/detail.css' %}?v=3">
 {% endblock %}
 
@@ -18,5 +18,5 @@
 
 {% block extra_js %}
 {{ image_downloads|json_script:"article-image-downloads" }}
-<script type="module" src="{% static 'articles/image_viewer.js' %}?v=2"></script>
+<script type="module" src="{% static 'articles/image_viewer.js' %}?v=4"></script>
 {% endblock %}

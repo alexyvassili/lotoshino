@@ -13,6 +13,7 @@ def collection_template_choices():
         label = {
             "compact": "Компактный — текстовый список",
             "history": "История благочиния — карточки как во Flask",
+            "novomucheniki-lotoshinskogo-okruga": "Новомученики Лотошинского округа",
         }.get(path.stem, path.stem)
         choices.append((f"article_collections/layouts/{path.name}", label))
     return choices
