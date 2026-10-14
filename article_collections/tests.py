@@ -22,7 +22,7 @@ from site_settings.models import SiteSettings
 
 from .forms import CollectionForm, CollectionItemForm
 from .images import article_images
-from .layouts import DEFAULT_TEMPLATE, collection_template_choices
+from .layouts import DEFAULT_TEMPLATE, TEXT_TEMPLATE, collection_template_choices
 from .models import Collection, CollectionItem
 
 
@@ -49,6 +49,44 @@ class CollectionTests(TestCase):
             annotation="Annotation",
             **kwargs,
         )
+
+    def test_text_collection_has_one_editor_and_saves_without_card_formset(self):
+        content = '<figure class="table"><table style="border-style:none;"><tbody><tr><td style="border-style:none;"><p><a href="/articles/example/">Материал</a></p></td></tr></tbody></table></figure>'
+        collection = Collection.objects.create(
+            title="Азбука Православия",
+            template_name=TEXT_TEMPLATE,
+            introduction=content,
+        )
+        change_url = reverse(
+            "admin:article_collections_collection_change", args=[collection.pk]
+        )
+        response = self.client.get(change_url)
+        self.assertContains(response, "Содержимое:")
+        self.assertNotContains(response, 'name="closing_text"')
+        self.assertNotContains(response, 'id="items-group"')
+        self.assertNotContains(response, 'name="template_name"')
+        response = self.client.post(
+            change_url,
+            {
+                "title": collection.title,
+                "slug": collection.slug,
+                "introduction": content.replace("Материал", "Новый текст"),
+                "is_published": "on",
+                "_save": "Сохранить",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        collection.refresh_from_db()
+        self.assertIn("Новый текст", collection.introduction)
+        self.assertEqual(collection.items.count(), 0)
+        response = Client().get(collection.get_absolute_url())
+        self.assertTemplateUsed(response, TEXT_TEMPLATE)
+        self.assertContains(response, 'style="border-style:none;"')
+        self.assertContains(response, "Новый текст")
+        self.assertNotContains(response, "Статьи скоро появятся")
+        collection.is_published = False
+        collection.save()
+        self.assertEqual(Client().get(collection.get_absolute_url()).status_code, 404)
 
     def test_public_order_titles_escaping_and_drafts(self):
         self.item(position=2, title="Custom heading")
@@ -175,20 +213,25 @@ class CollectionTests(TestCase):
             self.assertNotIn("<script>", collection.closing_text)
             self.assertNotIn("onclick", collection.closing_text)
             response = Client().get(collection.get_absolute_url())
+            editor_count = 1 if template == TEXT_TEMPLATE else 2
             self.assertContains(
                 response,
                 '<p class="article-annotation"><strong>Note</strong></p>',
-                count=2,
+                count=editor_count,
                 html=True,
             )
-            self.assertContains(response, 'data-image-base="/media/images/"', count=2)
+            self.assertContains(
+                response, 'data-image-base="/media/images/"', count=editor_count
+            )
             self.assertNotContains(response, "&lt;p")
             admin_response = self.client.get(
                 reverse(
                     "admin:article_collections_collection_change", args=[collection.pk]
                 )
             )
-            self.assertContains(admin_response, 'data-article-editor="true"', count=2)
+            self.assertContains(
+                admin_response, 'data-article-editor="true"', count=editor_count
+            )
             self.assertContains(
                 admin_response, reverse("admin:collection_image_upload")
             )

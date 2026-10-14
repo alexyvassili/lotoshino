@@ -5,11 +5,18 @@ from django import forms
 from articles.html import clean_article_html
 from articles.illustrations import ILLUSTRATION_ERROR, has_invalid_illustrations
 
+from .layouts import TEXT_TEMPLATE
 from .models import Collection, CollectionItem
 from .widgets import CollectionEditorWidget, CollectionImageWidget
 
 
 class CollectionForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        template = self.data.get("template_name") if self.is_bound else None
+        if (template or self.instance.template_name) == TEXT_TEMPLATE:
+            self.fields["introduction"].label = "Содержимое"
+
     class Meta:
         model = Collection
         fields = (

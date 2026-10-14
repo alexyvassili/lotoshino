@@ -6,6 +6,7 @@ from django.utils.html import format_html
 
 from . import views
 from .forms import CollectionForm, CollectionItemForm
+from .layouts import TEXT_TEMPLATE
 from .models import Collection, CollectionItem
 
 
@@ -68,7 +69,15 @@ class CollectionAdmin(admin.ModelAdmin):
         return tuple(
             "template_display" if obj and field == "template_name" else field
             for field in self.fields
+            if not (
+                obj and obj.template_name == TEXT_TEMPLATE and field == "closing_text"
+            )
         )
+
+    def get_inlines(self, request, obj=None):
+        if obj and obj.template_name == TEXT_TEMPLATE:
+            return ()
+        return super().get_inlines(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
         return ("template_display",) if obj else ()
@@ -83,7 +92,7 @@ class CollectionAdmin(admin.ModelAdmin):
         css: ClassVar = {
             "all": ("article_collections/admin.css", "article_collections/items.css")
         }
-        js = ("article_collections/admin.js",)
+        js = ("article_collections/admin.js?v=2",)
 
     def get_urls(self):
         return [

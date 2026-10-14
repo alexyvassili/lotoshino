@@ -200,6 +200,17 @@
     }
 
     const start = () => {
+        const template = document.querySelector('#id_template_name');
+        if (template) {
+            const updateLayout = () => {
+                const textOnly = template.value === 'article_collections/layouts/azbuka-pravoslaviya.html';
+                for (const node of document.querySelectorAll('.field-closing_text, #items-group')) node.hidden = textOnly;
+                const label = document.querySelector('label[for="id_introduction"]');
+                if (label) label.textContent = textOnly ? 'Содержимое:' : 'Вступительный текст:';
+            };
+            template.addEventListener('change', updateLayout);
+            updateLayout();
+        }
         const heading = document.querySelector('#items-heading');
         if (!heading) return;
         const navigation = element('nav', '', 'collection-contents');
