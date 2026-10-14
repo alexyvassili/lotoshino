@@ -1,6 +1,6 @@
 /* Two-column link directory from the Flask Azbuka page. Borders live in the
    editable HTML so the editor's border controls continue to work. */
-.azbuka-page-content { padding-right: 40px; }
+.azbuka-page-content { padding-right: 40px; font-size: medium; }
 .azbuka-page-content figure.table { margin-top: 0; --bs-table-bg: transparent; }
 .azbuka-page-content table { border-collapse: separate; border-spacing: 0; width: 100%; }
 .azbuka-page-content td { padding: 0 32px 8px 0; width: 50%; vertical-align: top; }
