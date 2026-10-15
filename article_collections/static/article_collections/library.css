@@ -43,7 +43,7 @@
 }
 
 .library-article-title a {
-	color: #000;
+	color: #cc0000;
 	text-decoration: none;
 }
 
@@ -62,7 +62,16 @@
 .library-article-more {
 	display: inline-block;
 }
+
+.library-article-more:hover {
+	color: #cc0000;
+	text-decoration: underline;
+}
 .library-page-content .library-article-excerpt p { text-align: justify; }
 @media (width < 768px) {
     .library-page-content { padding-right: 0; }
+}
+
+.library-introduction {
+	margin-bottom: 28px;
 }

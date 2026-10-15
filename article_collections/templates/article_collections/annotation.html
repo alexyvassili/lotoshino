@@ -1,0 +1,1 @@
+{% if item.external_url %}<p><a href="{{ item.external_url }}">{{ item.annotation|linebreaksbr }}</a></p>{% else %}{{ item.annotation|linebreaks }}{% endif %}

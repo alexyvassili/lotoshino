@@ -94,7 +94,9 @@ def prepare_image(request, pk):
 def detail(request, slug):
     collection = get_object_or_404(Collection, slug=slug, is_published=True)
     items = list(
-        collection.items.filter(article__is_published=True).select_related(
+        collection.items.filter(
+            Q(article__is_published=True) | Q(article__isnull=True)
+        ).select_related(
             "article", "image", "imported_preview"
         )
     )

@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import IntegrityError, models, router, transaction
 from django.urls import Resolver404, resolve, reverse
 
@@ -136,7 +137,19 @@ class CollectionItem(models.Model):
         Collection, on_delete=models.CASCADE, related_name="items"
     )
     article = models.ForeignKey(
-        "articles.Article", verbose_name="Статья", on_delete=models.PROTECT
+        "articles.Article",
+        verbose_name="Статья",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        help_text="Выберите статью или заполните внешнюю ссылку ниже.",
+    )
+    external_url = models.URLField(
+        "Внешняя ссылка",
+        max_length=2048,
+        blank=True,
+        validators=[URLValidator(schemes=["http", "https"])],
+        help_text="Для карточки другого сайта. Оставьте поле «Статья» пустым; аннотация станет текстом ссылки.",
     )
     title = models.CharField(
         "Название",
@@ -166,7 +179,13 @@ class CollectionItem(models.Model):
         editable=False,
         related_name="collection_items",
     )
-    link_text = models.CharField("Текст ссылки", max_length=100, default="Читать далее")
+    link_text = models.CharField(
+        "Текст ссылки",
+        max_length=100,
+        default="Читать далее",
+        blank=True,
+        help_text="Оставьте пустым, чтобы не показывать отдельную ссылку под аннотацией.",
+    )
     is_new = models.BooleanField("Новая статья", default=False)
     position = models.PositiveIntegerField("Порядок", default=0)
 
@@ -177,14 +196,24 @@ class CollectionItem(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=("collection", "article"), name="unique_collection_article"
-            )
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(article__isnull=False, external_url="")
+                    | (models.Q(article__isnull=True) & ~models.Q(external_url=""))
+                ),
+                name="collection_item_one_destination",
+            ),
         ]
 
     def __str__(self):
-        return self.title or str(self.article)
+        return self.title or (
+            str(self.article) if self.article_id else self.external_url
+        )
 
     def save(self, **kwargs):
-        if not self.title.strip():
+        self.clean()
+        if not self.title.strip() and self.article_id:
             self.title = self.article.title
         if self.imported_preview_id and self.imported_preview.image_id != self.image_id:
             self.imported_preview = None
@@ -193,3 +222,20 @@ class CollectionItem(models.Model):
                     "imported_preview"
                 }
         super().save(**kwargs)
+
+    def get_absolute_url(self):
+        return self.article.get_absolute_url() if self.article_id else self.external_url
+
+    def clean(self):
+        super().clean()
+        if bool(self.article_id) == bool(self.external_url):
+            raise ValidationError(
+                "Выберите статью или укажите внешнюю ссылку — только один вариант."
+            )
+        if self.external_url:
+            try:
+                URLValidator(schemes=["http", "https"])(self.external_url)
+            except ValidationError as error:
+                raise ValidationError({"external_url": error.messages}) from error
+            if not self.title.strip():
+                raise ValidationError({"title": "Укажите название карточки."})

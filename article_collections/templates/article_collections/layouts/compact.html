@@ -4,9 +4,9 @@
 <ul class="collection-compact-list">
     {% for item in items %}
     <li>
-        <h2><a href="{{ item.article.get_absolute_url }}">{{ item.title }}</a></h2>
-        <div class="collection-annotation">{{ item.annotation|linebreaks }}</div>
-        <p class="collection-read-more"><a href="{{ item.article.get_absolute_url }}">{{ item.link_text }}</a></p>
+        <h2><a href="{{ item.get_absolute_url }}">{{ item.title }}</a></h2>
+        <div class="collection-annotation">{% include "article_collections/annotation.html" %}</div>
+        {% if item.link_text %}<p class="collection-read-more"><a href="{{ item.get_absolute_url }}">{{ item.link_text }}</a></p>{% endif %}
     </li>
     {% empty %}<li>Статьи скоро появятся.</li>{% endfor %}
 </ul>

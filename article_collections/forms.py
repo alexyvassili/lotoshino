@@ -49,6 +49,7 @@ class CollectionItemForm(forms.ModelForm):
         fields = (
             "collection",
             "article",
+            "external_url",
             "title",
             "image",
             "image_caption",

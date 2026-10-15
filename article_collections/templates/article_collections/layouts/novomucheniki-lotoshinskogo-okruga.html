@@ -13,14 +13,14 @@
         <article class="martyr-card{% if not item.preview and not item.image_caption %} martyr-card-text-only{% endif %}">
             {% if item.preview or item.image_caption %}
             <figure class="martyr-card-portrait">
-                {% if item.preview %}<a href="{{ item.article.get_absolute_url }}" tabindex="-1" aria-hidden="true"><img src="{{ item.preview.url }}" width="{{ item.preview.width }}" height="{{ item.preview.height }}" alt=""></a>{% endif %}
+                {% if item.preview %}<a href="{{ item.get_absolute_url }}" tabindex="-1" aria-hidden="true"><img src="{{ item.preview.url }}" width="{{ item.preview.width }}" height="{{ item.preview.height }}" alt=""></a>{% endif %}
                 {% if item.image_caption %}<figcaption class="martyr-dates">{{ item.image_caption }}</figcaption>{% endif %}
             </figure>
             {% endif %}
             <div class="martyr-card-body">
-                <h2 class="martyr-card-title"><a href="{{ item.article.get_absolute_url }}">{{ item.title }}</a></h2>
-                <div class="martyr-excerpt">{{ item.annotation|linebreaks }}</div>
-                <a class="all-news-link martyr-read-more" href="{{ item.article.get_absolute_url }}">{{ item.link_text }}<span class="visually-hidden">: {{ item.title }}</span></a>
+                <h2 class="martyr-card-title"><a href="{{ item.get_absolute_url }}">{{ item.title }}</a></h2>
+                <div class="martyr-excerpt">{% include "article_collections/annotation.html" %}</div>
+                {% if item.link_text %}<a class="all-news-link martyr-read-more" href="{{ item.get_absolute_url }}">{{ item.link_text }}<span class="visually-hidden">: {{ item.title }}</span></a>{% endif %}
             </div>
         </article>
         {% empty %}<p>Статьи скоро появятся.</p>{% endfor %}

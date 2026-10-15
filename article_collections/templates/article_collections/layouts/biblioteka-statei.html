@@ -5,20 +5,20 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'articles/content.css' %}?v=6">
 <link rel="stylesheet" href="{% static 'articles/detail.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'article_collections/library.css' %}">
+<link rel="stylesheet" href="{% static 'article_collections/library.css' %}?v=6">
 {% endblock %}
 
 {% block maincontent %}
 <h1 class="mainblock-header">{{ collection.title }}</h1>
 <div class="library-page-content">
-    {% if collection.introduction %}<div class="article-content ck-content" data-image-base="{{ image_base }}">{{ introduction_content|safe }}</div>{% endif %}
+    {% if collection.introduction %}<div class="library-introduction article-content ck-content" data-image-base="{{ image_base }}">{{ introduction_content|safe }}</div>{% endif %}
     <div class="library-article-list">
         {% for item in items %}
         <article class="card library-article-card">
             <div class="card-body library-article-card-body">
-                <h2 class="library-article-title">{% if item.is_new %}<sup class="library-card-badge">Новая статья!</sup> {% endif %}<a href="{{ item.article.get_absolute_url }}">{{ item.title }}</a></h2>
-                <div class="library-article-excerpt">{{ item.annotation|linebreaks }}</div>
-                <a class="all-news-link library-article-more" href="{{ item.article.get_absolute_url }}">{{ item.link_text }}</a>
+                <h2 class="library-article-title">{% if item.is_new %}<sup class="library-card-badge">Новая статья!</sup> {% endif %}<a href="{{ item.get_absolute_url }}">{{ item.title }}</a></h2>
+                <div class="library-article-excerpt">{% include "article_collections/annotation.html" %}</div>
+                {% if item.link_text %}<a class="all-news-link library-article-more" href="{{ item.get_absolute_url }}">{{ item.link_text }}</a>{% endif %}
             </div>
         </article>
         {% empty %}<p>Статьи скоро появятся.</p>{% endfor %}

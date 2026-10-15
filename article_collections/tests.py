@@ -50,6 +50,65 @@ class CollectionTests(TestCase):
             **kwargs,
         )
 
+    def test_external_card_form_requires_one_destination_and_title(self):
+        data = {
+            "collection": self.collection.pk,
+            "title": "External book",
+            "external_url": "https://example.org/book/",
+            "annotation": "Download the book",
+            "link_text": "",
+            "position": 0,
+        }
+        form = CollectionItemForm(data)
+        self.assertTrue(form.is_valid(), form.errors)
+        card = form.save()
+        self.assertIsNone(card.article_id)
+        self.assertEqual(card.get_absolute_url(), data["external_url"])
+        for changes in (
+            {"article": self.article.pk},
+            {"external_url": ""},
+            {"title": ""},
+            {"external_url": "javascript:alert(1)"},
+            {"external_url": "ftp://example.org/book"},
+        ):
+            with self.subTest(changes=changes):
+                self.assertFalse(CollectionItemForm({**data, **changes}).is_valid())
+
+    def test_external_cards_render_in_all_card_layouts_without_more_link(self):
+        self.article.is_published = False
+        self.article.save()
+        for index, (template, _) in enumerate(collection_template_choices()):
+            if template == TEXT_TEMPLATE:
+                continue
+            with self.subTest(template=template):
+                collection = Collection.objects.create(
+                    title=f"External {index}",
+                    template_name=template,
+                )
+                CollectionItem.objects.create(
+                    collection=collection,
+                    article=self.article,
+                    annotation="Hidden draft",
+                    title="Draft card",
+                )
+                CollectionItem.objects.create(
+                    collection=collection,
+                    external_url="https://example.org/book/",
+                    title="External book",
+                    annotation="Download <book>",
+                    link_text="",
+                    position=1,
+                )
+                response = Client().get(collection.get_absolute_url())
+                self.assertContains(
+                    response,
+                    'href="https://example.org/book/">Download &lt;book&gt;</a>',
+                )
+                self.assertNotContains(response, "Hidden draft")
+                self.assertNotContains(response, 'href=""')
+                self.assertNotContains(response, "Читать далее")
+                self.assertNotContains(response, "Продолжение")
+
     def test_text_collection_has_one_editor_and_saves_without_card_formset(self):
         content = '<figure class="table"><table style="border-style:none;"><tbody><tr><td style="border-style:none;"><p><a href="/articles/example/">Материал</a></p></td></tr></tbody></table></figure>'
         collection = Collection.objects.create(

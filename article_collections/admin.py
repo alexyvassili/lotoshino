@@ -18,6 +18,7 @@ class CollectionItemInline(admin.StackedInline):
     autocomplete_fields = ("article",)
     fields = (
         "article",
+        "external_url",
         "publication_status",
         "title",
         "image",
@@ -41,6 +42,8 @@ class CollectionItemInline(admin.StackedInline):
 
     @admin.display(description="Статус статьи")
     def publication_status(self, obj):
+        if obj and obj.external_url:
+            return "Внешняя ссылка"
         if obj and obj.article_id:
             return (
                 "Опубликовано"
